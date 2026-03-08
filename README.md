@@ -1,9 +1,14 @@
 # Steering RL: Training Interventions to Mitigate Reward Hacking
 
+## Context
+
+This repo is a fork of the [reward hacking setup](https://www.lesswrong.com/posts/R5MdWGKsuvdPwGFBG/steering-rl-training-benchmarking-interventions-against) by ariaw, Josh Engels, and Neel Nanda. The [original GitHub repository](https://github.com/ariahw/rl-rewardhacking) is linked from that post to replicate the results. To start, we are trying to scale this up to a larger model than the one used in the original work. We then plan to extend the experiment by training a sparse autoencoder to see if we can detect reward hacking early in an unsupervised way (some open-source libraries exist for this).
+
+
 
 ## Setup
 
-Make sure to first copy .env.template and fill with your variables. Set `MAX_JOBS` according to the number of CPU cores that you have available. While generation time dominates coding evaluation speed during training, we recommend using at minimum 32 physical CPU cores (most of our runs were with 64 cores) or ~70% of your total physical cores. Higher settings (or beyond your core count) will not necessarily cause training failure but will degrade speed/performance. 
+Make sure to first copy .env.template and fill with your variables. Set `MAX_JOBS` according to the number of CPU cores that you have available. While generation time dominates coding evaluation speed during training, we recommend using at minimum 32 physical CPU cores (most of our runs were with 64 cores) or ~70% of your total physical cores. Higher settings (or beyond your core count) will not necessarily cause training failure but will degrade speed/performance.
 
 If you are running the models on a machine that is already set up, you can run:
 ```bash
@@ -15,7 +20,7 @@ source setup_gpu.sh
 ```
 You may want to modify some values in  `.env.gpu` depending on your GPU provider/setup. `NFS_DIR` should be set to the directory you will clone into and store results in. `LOCAL_SSD_DIR` should be set to a fast directory for cache read/write. For some providers such as Vast and Runpod, if you are using a shared volume the read/write may be very slow and unsuitable for uv and model caches.
 
-Either setup script will load commands defined in `commands.sh` which define most of the core actions in the repo. 
+Either setup script will load commands defined in `commands.sh` which define most of the core actions in the repo.
 
 ## Data
 
@@ -30,7 +35,7 @@ To create the remaining datasets with the loophole hints added, run `create_all_
 
 **Ensure that you have first created the relevant loopholed datasets by running `create_all_datasets`**.
 
-The base script for running trainings is `scripts/run_rl_training.py`. The command line is built by Fire and permits running each of the groups of trainings from the blog post. We provide a convenience alias `run_rl_training` to trigger the script: 
+The base script for running trainings is `scripts/run_rl_training.py`. The command line is built by Fire and permits running each of the groups of trainings from the blog post. We provide a convenience alias `run_rl_training` to trigger the script:
 ```bash
 run_rl_training <INTERVENTION_TYPE> <ADDITIONAL_ARGS>
 ```
@@ -40,26 +45,26 @@ The main argument accepts the following intervention types:
 - `ground_truth`: RL with the loophole using the ground truth monitor with either screening or penalty intervention. Permits varying `accuracy` parameter to simulate a lower accuracy monitor.
 - `probe`: RL with the loophole using the probe monitor with either screening or penalty intervention
 - `llm_judge`: RL with the loophole using the LLM judge monitor with either screening or penalty intervention.
-- `innoculation`: RL with the loophole using inoculation prompting. See `src/prompts.py` for a list of the prompt options available. 
+- `innoculation`: RL with the loophole using inoculation prompting. See `src/prompts.py` for a list of the prompt options available.
 
 Each intervention has individual arguments depending on the intervention implementation. See `scripts/run_rl_training.py` for further details. All options accept the following common arguments:
 - **--model_id**: Default qwen/Qwen3-4B. Any Qwen model should work with the existing setup; for additional models, see Contribution section for more information on adding other models.
-- **--task**: Default simple_overwrite_tests. Other options include the alternative prompt names. For RL baseline, "nohint" or "None" is accepted. See `src/data/hints.py` for the names of all implemented hints. 
+- **--task**: Default simple_overwrite_tests. Other options include the alternative prompt names. For RL baseline, "nohint" or "None" is accepted. See `src/data/hints.py` for the names of all implemented hints.
 - **--seed**: Default 1. Seed used for RL training.
 
 To run the top interventions, we include `scripts/top_interventions.sh` containing the interventions from Figure 0 in the blog post. This also serves as a set of examples of how to use the training script.
 
-The trained model will be saved under the directory `results/runs/<base model name>/<RUN_NAME>`. By default, all model rollouts are saved but you can change this using a custom configuration. 
+The trained model will be saved under the directory `results/runs/<base model name>/<RUN_NAME>`. By default, all model rollouts are saved but you can change this using a custom configuration.
 
 Prior to running the probe intervention, you will need to train your own probe. See [probe training](#probe-training) for details.
 
 ## Evaluation
 
-Once the model trainings have been run, you can evaluate the model by running `eval_model <RUN_NAME>`. By default, this will run against all the available loopholes, however the evaluations seen in the paper use only the no hint and overwrite_tests loopholes unless otherwise mentioned. 
+Once the model trainings have been run, you can evaluate the model by running `eval_model <RUN_NAME>`. By default, this will run against all the available loopholes, however the evaluations seen in the paper use only the no hint and overwrite_tests loopholes unless otherwise mentioned.
 ```bash
 eval_model <RUN_NAME> <optional: CHECKPOINT_STEPS>
 ```
-If no checkpoint is specified, the checkpoint argument defaults to 200. 
+If no checkpoint is specified, the checkpoint argument defaults to 200.
 
 ## Further Details
 
@@ -67,9 +72,9 @@ If no checkpoint is specified, the checkpoint argument defaults to 200.
 
 The loophole is exploited very infrequently (<1 out of 1,000 samples) by the base model, so you will likely not be able to produce sufficient data for training a probe using only the base model. We recommend first running a reward hacking RL run without any interventions to create a reward hacked model, then using that model to generate responses.
 
-The probe training runs off of the training holdout dataset. This contains problems that were not used in training because their difficulty is lower; as a result, we see much higher correct response rates and much lower reward hacking rates in this dataset. In order to get sufficient reward hacking samples, we use a higher temperature (0.9) and 10x repeated sampling on 1,000 problems, then filter out many correct responses to get a reasonably balanced dataset. 
+The probe training runs off of the training holdout dataset. This contains problems that were not used in training because their difficulty is lower; as a result, we see much higher correct response rates and much lower reward hacking rates in this dataset. In order to get sufficient reward hacking samples, we use a higher temperature (0.9) and 10x repeated sampling on 1,000 problems, then filter out many correct responses to get a reasonably balanced dataset.
 
-We provide a convenience alias to use a reward hacking run RUN_NAME to train multiple probes. 
+We provide a convenience alias to use a reward hacking run RUN_NAME to train multiple probes.
 ```bash
 train_probe <RUN_NAME>
 ```
@@ -82,7 +87,7 @@ The script completes the following setps:
 6. Evaluate the probes on the test split of the dataset
 For more finegrained control, refer to `scripts/run_probe_training.py`.
 
-Probes will be output under a subfolder of `results/activations` with the test dataset statistics summarized by a file called `probe_rh_summary_stats.json`; you can use these statistics to select which probe, layer and threshold you would like to use. The auto-selection of the threshold is done with target false positive rate of 5%. 
+Probes will be output under a subfolder of `results/activations` with the test dataset statistics summarized by a file called `probe_rh_summary_stats.json`; you can use these statistics to select which probe, layer and threshold you would like to use. The auto-selection of the threshold is done with target false positive rate of 5%.
 
 ### Bring Your Own Probe
 
