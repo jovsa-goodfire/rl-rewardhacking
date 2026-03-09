@@ -10,12 +10,15 @@ Just Python, PyTorch, SAELens, and the existing training infrastructure.
 
 ## Research Goals
 
-From the [README](README.md):
+| # | Goal | Workstream | Priority |
+|---|------|-----------|----------|
+| 1 | **Scale up**: Reproduce the original results on larger models (8B, 14B), different datasets (Impossible Bench), and reasoning mode (thinking). Test generality across model scale, data, and inference mode. | Workstream 1 | Core |
+| 2 | **Extend with SAEs**: Train a sparse autoencoder on model activations to detect reward hacking early in an unsupervised way — without labeled data, with per-strategy granularity, and potentially before the behavior manifests. | Workstream 2 | Core |
+| 3 | **Intervene with SAE features** *(stretch)*: Use the discovered SAE features to actively steer model behavior — at inference time via activation steering, and at training time via SAE-based reward penalties. Close the loop from detection to prevention. | Workstream 3 | Stretch |
 
-> 1. **Scale up**: Reproduce the original results on a larger model than Qwen3-4B.
-> 2. **Extend with SAEs**: Train a sparse autoencoder on model activations to detect reward hacking early in an unsupervised way.
+Goal 1 establishes that the phenomenon is real and general. Goal 2 shows we can see it from the inside. Goal 3 shows we can use that visibility to fix it. Each goal builds on the previous.
 
-This sprint delivers both. Everything we build is **model-agnostic** — the same scripts work for Qwen3-4B, Qwen3-8B, Qwen3-14B, or any other Qwen3 model the codebase supports. We validate on Qwen3-4B first (known behavior) and then run on two larger models to get a real scaling curve.
+This sprint delivers all three. Everything we build is **model-agnostic** — the same scripts work for Qwen3-4B, Qwen3-8B, Qwen3-14B, or any other Qwen3 model the codebase supports. We validate on Qwen3-4B first (known behavior) and then run on two larger models to get a real scaling curve.
 
 ### Model Lineup
 
@@ -33,26 +36,43 @@ We have three workstreams that run in parallel, each with specific questions, pr
 
 ---
 
-#### Workstream 1: Scale Up — Does the Setup Survive Larger Models?
+#### Workstream 1: Scale Up — Does the Setup Survive Larger Models and Different Datasets?
 
-**Why this matters:** The original result is on Qwen3-4B. We need to know if reward hacking is a small-model curiosity or a general phenomenon. But scaling up introduces practical risks.
+**Axes: model scale, dataset, reasoning mode**
+
+The original result is a single point: Qwen3-4B + LeetCode + standard mode. This workstream varies three axes to test how general the phenomenon is:
+
+| Axis | Values | What It Tests |
+|------|--------|--------------|
+| **Model scale** | 4B → 8B → 14B | Does RH emerge at larger scale? Faster or slower? |
+| **Dataset** | LeetCode → Impossible Bench | Is RH tied to this dataset, or general to the loophole? |
+| **Reasoning mode** | Standard → Thinking | Does CoT amplify or suppress RH? |
 
 | # | Question | Method | What We Do With the Answer |
 |---|----------|--------|---------------------------|
 | R1 | Does reward hacking emerge in Qwen3-8B and Qwen3-14B? | Run `no_intervention` training on each. Measure hack rate over training steps. | If YES → proceed to SAE analysis on all models. If NO → investigate why (memorization? different loophole difficulty? insufficient training steps?) |
 | R2 | Does it emerge faster or slower at scale? | Compare the hack rate vs. training step curve across 4B, 8B, 14B. Three points on the scaling curve — enough to distinguish linear from accelerating. | If FASTER → larger models are more dangerous, interventions matter more. If SLOWER → the loophole may be harder for larger models (interesting finding either way). |
 | R2b | Is the LeetCode result confounded by memorization? | Run both LeetCode and Impossible Bench on 8B and 14B. Compare base model correctness at step 0 and hack rate trajectories. If a model hacks on both datasets, it's genuine. If it only hacks on LeetCode, memorization is confounding. | The 2×3 matrix (2 datasets × 3 model sizes) cleanly separates the memorization question from the scaling question. |
+| R2c | Does reward hacking generalize across datasets? | Run Qwen3-4B on Impossible Bench with the same loophole. Compare hack rate, discovery speed, and hacking strategies vs. LeetCode. | If RH EMERGES ON BOTH → the phenomenon is dataset-agnostic, tied to the loophole structure, not the problem domain. This is the stronger claim. If RH IS LEETCODE-SPECIFIC → the model may be exploiting domain knowledge (e.g., knowing what test functions look like in competitive programming), not discovering a general strategy. Understanding this distinction matters for how broadly we can apply interventions. |
 | R7 | Does thinking mode change reward hacking? | Run Qwen3-4B with `--enable_thinking=True`. Compare hack rate, hack strategies, and timing vs. standard mode. | If THINKING HELPS HACKING → reasoning amplifies the problem (alarming, publishable). If THINKING REDUCES HACKING → CoT may provide natural resistance (interesting, less alarming). Either way, the SAE comparison (thinking vs. standard) reveals whether CoT activations carry different behavioral signals. |
 
 **Risk: setup is flaky at scale.** Don't assume it works. Validate Qwen3-4B reproduces the paper first (~79% hack rate, ~15% correctness). Only then scale up. If a larger model fails, diagnose whether it's a training issue (OOM, instability) or a genuine result (the model doesn't hack). These are very different outcomes.
 
-**Execution order:** 4B first (validate) → 8B and 14B in parallel (scale) → 4B-thinking in parallel (reasoning). Check R2b as soon as each larger model's step-0 baseline is available — don't wait for the full 200-step run.
+**Execution order:** 4B on LeetCode first (validate) → 4B on Impossible Bench (R2c, tests dataset generality) → 8B and 14B in parallel (scale) → 4B-thinking in parallel (reasoning). Check R2b as soon as each larger model's step-0 baseline is available.
 
 ---
 
 #### Workstream 2: SAE Detection — Can We See It From the Inside?
 
-**Why this matters:** The existing probe monitor requires labeled data (supervised). An SAE trained without labels that still detects reward hacking is a fundamentally different capability — unsupervised behavioral monitoring. If it works, it generalizes to behaviors you haven't labeled yet.
+**Axes: detection method (unsupervised vs. supervised), detection granularity (binary vs. per-type), detection timing (post-hoc vs. early)**
+
+The existing probe is supervised, binary, and post-hoc. This workstream tests whether an SAE — unsupervised, with per-strategy granularity, and potentially predictive — can match or exceed it.
+
+| Axis | Baseline (probe) | SAE Target |
+|------|-----------------|-----------|
+| **Supervision** | Requires labeled RH data | Trained on activations only, no labels |
+| **Granularity** | Binary: hack / no hack | Per-strategy: bypass, hardcode, operator redef, etc. |
+| **Timing** | Detects at evaluation time | Potentially detects before RH manifests (lead time) |
 
 | # | Question | Method | What We Do With the Answer |
 |---|----------|--------|---------------------------|
@@ -68,7 +88,15 @@ We have three workstreams that run in parallel, each with specific questions, pr
 
 #### Workstream 3: Intervention — Can We Use This to Fix the Problem?
 
-**Why this matters:** Detection is useful. But the end goal is intervening — either at inference time (block/steer bad outputs) or at training time (prevent the model from learning to hack in the first place). This workstream closes the loop from "we can see it" to "we can stop it."
+**Axes: intervention timing (inference vs. training), intervention method (steering vs. penalty), generalization (does it work across scales?)**
+
+Detection is useful. But the end goal is intervening. This workstream varies when and how we intervene, and tests whether it generalizes.
+
+| Axis | Values | What It Tests |
+|------|--------|--------------|
+| **Timing** | Inference-time steering → Training-time penalty | Can we fix outputs after training, or must we fix training itself? |
+| **Method** | Activation steering (modify representations) → Reward penalty (modify gradients) | Are SAE features causally involved, or just correlated? |
+| **Generalization** | 4B → 8B → 14B | Does the same intervention approach work at different scales? |
 
 | # | Question | Method | What We Do With the Answer |
 |---|----------|--------|---------------------------|
@@ -94,6 +122,7 @@ Priority 1 — Must answer (validates the entire approach):
 Priority 2 — Should answer (strengthens the story):
   R2:  Scaling trend (3-point curve) (Day 2)
   R2b: Memorization check (Day 2, quick)
+  R2c: Dataset generality — does RH emerge on Impossible Bench? (Day 1-2)
   R6:  Inference steering works? (Day 2)
   R7:  Reasoning model comparison (Day 2)
 
@@ -108,17 +137,19 @@ Priority 3 — Stretch (impressive if achieved):
 A model-agnostic pipeline that answers all research questions:
 
 ```
-Workstream 1 — Scale Up (R1, R2, R2b, R7)
-  Train 4B (validate) → 8B + 14B (scale) → 4B-thinking (reasoning)
-  Check for memorization at each scale before proceeding
+Workstream 1 — Scale Up (R1, R2, R2b, R2c, R7)
+  Axes: model scale, dataset, reasoning mode
+  Train 4B (validate) → 4B on Impossible Bench (dataset) →
+  8B + 14B (scale) → 4B-thinking (reasoning)
 
 Workstream 2 — SAE Detection (R3, R3b, R4)
-  For each validated model:
-  Collect activations → Train SAE on mixed data → Correlate with RH labels
-  Break down by RH type → Track features across training time
+  Axes: supervision, granularity, timing
+  Collect activations → Train SAE (unsupervised) → Correlate with RH labels →
+  Break down by RH type (granularity) → Track across time (early detection)
 
 Workstream 3 — Intervention + Demo (R5, R6, R8)
-  Inference monitor + steering → Training-time SAE penalty → Cross-scale comparison
+  Axes: intervention timing, method, scale generalization
+  Inference steering → Training-time penalty → Test across 4B/8B/14B
 ```
 
 ## Prerequisites: Kick Off Training Runs First
@@ -209,12 +240,13 @@ Estimated effort: ~2 hours to write the processor + filter dataset. The rest of 
 |-----|-------|---------|---------|
 | A1 | Qwen3-4B | LeetCode | Reproduce original paper (baseline) |
 | A2 | Qwen3-4B (thinking) | LeetCode | R7: reasoning model comparison |
+| A3 | Qwen3-4B | Impossible Bench | R2c: dataset generality |
 | B1 | Qwen3-8B | LeetCode | R1/R2: scale up |
 | B2 | Qwen3-8B | Impossible Bench | R2b: memorization control |
 | C1 | Qwen3-14B | LeetCode | R1/R2: scale up |
 | C2 | Qwen3-14B | Impossible Bench | R2b: memorization control |
 
-Priority: A1 first (validate), then B1+C1 in parallel (scale), then B2+C2 (memorization control), then A2 (reasoning). The Impossible Bench runs can share GPU time with other work since they use the same training infrastructure.
+Priority: A1 first (validate), then A3 (dataset generality — answers R2c before we invest in scaling), then B1+C1 in parallel (scale), then B2+C2 (memorization control), then A2 (reasoning).
 
 ---
 
@@ -227,6 +259,7 @@ Priority: A1 first (validate), then B1+C1 in parallel (scale), then B2+C2 (memor
 | R1: Does RH emerge at larger scale? | Hack rate comparison chart (4B vs. 8B vs. 14B) | `r1_r2_scale_comparison.png` |
 | R2: Faster or slower? | Discovery step comparison | Same chart + printed analysis |
 | R2b: Memorization confound? | Base model correctness comparison at step 0 | Notebook Cell 3c output |
+| R2c: Dataset generality? | LeetCode vs. Impossible Bench hack rate comparison on 4B | Notebook Cell 2 (multi-dataset) |
 | R3: Can SAE detect RH unsupervised? | Feature correlation analysis with AUROC | Notebook Cell 3 output |
 | R3b: Per-type detection? | Per-strategy feature correlations (bypass, hardcode, etc.) | Notebook Cell 3b output |
 | R4: Can it detect early? | Feature timeline + lead time analysis | `r4_early_detection.png` |
@@ -261,6 +294,7 @@ After 2 days, you should have:
 4. [ ] R1 answered: Does Qwen3-8B and Qwen3-14B reward hack? (yes/no + hack rate for each)
 5. [ ] R2 answered: Scaling trend across 4B → 8B → 14B (discovery step comparison, three-point curve)
 6. [ ] R2b answered: Are larger model results confounded by memorization? (base correctness check)
+7. [ ] R2c answered: Does RH emerge on Impossible Bench too? (dataset generality)
 7. [ ] R3 answered: ≥3 SAE features with |correlation| > 0.3 with RH labels (unsupervised detection works/doesn't)
 8. [ ] R3b answered: Do different features correspond to different RH strategies? (per-type breakdown)
 9. [ ] R4 answered: ≥1 feature with lead time > 0 steps (early detection exists/doesn't)
