@@ -4,8 +4,8 @@ Trial 1: Hello GPU
 Verify you can see GPUs and check the hardware.
 
 HOW TO RUN (from your dev pod, NOT the login node):
-  Option A - directly:    python 01_hello_gpu.py
-  Option B - via srun:    srun --gres gpu:1 --time 00:10:00 python 01_hello_gpu.py
+  Option A - directly:    python ~/rl-rewardhacking/cluster-tutorial/01_hello_gpu.py
+  Option B - via srun:    srun --gres gpu:1 --time 00:10:00 python ~/rl-rewardhacking/cluster-tutorial/01_hello_gpu.py
 """
 
 import subprocess

@@ -10,7 +10,7 @@
 # This job trains slowly on purpose so you have time to attach with:
 #   srun --overlap --pty --jobid <THIS_JOBID> bash
 #
-# HOW TO RUN:   sbatch 07_long_job.sbatch
+# HOW TO RUN:   sbatch ~/rl-rewardhacking/cluster-tutorial/07_long_job.sbatch
 # THEN:         srun --overlap --pty --jobid <JOBID> bash
 # INSIDE:       nvidia-smi, htop, tail -f ~/slurm_logs/trial7-<JOBID>.log
 

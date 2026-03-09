@@ -8,7 +8,7 @@ SETUP (run once on the cluster):
   uv add submitit torch
 
 HOW TO RUN (from a dev pod or compute node, NOT the login node):
-  python 08_submitit_jobs.py
+  python ~/rl-rewardhacking/cluster-tutorial/08_submitit_jobs.py
 
 This will submit 3 Slurm jobs to the cluster and wait for results.
 """

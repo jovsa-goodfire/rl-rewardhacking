@@ -9,7 +9,7 @@
 # ==============================
 # HOW TO RUN (from the login node):
 #   mkdir -p ~/slurm_logs
-#   sbatch 03_sbatch_job.sbatch
+#   sbatch ~/rl-rewardhacking/cluster-tutorial/03_sbatch_job.sbatch
 #
 # THEN:
 #   squeue -u $USER              # watch your job status (PD=pending, R=running)

@@ -10,7 +10,7 @@
 # ====================================================
 # This submits 3 jobs with different hyperparameters, running at most 2 at a time.
 #
-# HOW TO RUN:   sbatch 05_array_job.sbatch
+# HOW TO RUN:   sbatch ~/rl-rewardhacking/cluster-tutorial/05_array_job.sbatch
 # MONITOR:      squeue -u $USER
 # RESULTS:      ls ~/slurm_logs/trial5-*
 #

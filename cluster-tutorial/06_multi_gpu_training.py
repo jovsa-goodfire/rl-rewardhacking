@@ -5,10 +5,10 @@ Trains a simple model across multiple GPUs using PyTorch DistributedDataParallel
 
 HOW TO RUN:
   Option A (srun, 4 GPUs):
-    srun --gres gpu:4 --time 00:15:00 torchrun --nproc_per_node=4 06_multi_gpu_training.py
+    srun --gres gpu:4 --time 00:15:00 torchrun --nproc_per_node=4 ~/rl-rewardhacking/cluster-tutorial/06_multi_gpu_training.py
 
   Option B (sbatch):
-    sbatch 06_multi_gpu_training.sbatch
+    sbatch ~/rl-rewardhacking/cluster-tutorial/06_multi_gpu_training.sbatch
 
   Option C (full node, 8 GPUs):
     srun --gres gpu:8 --time 00:15:00 torchrun --nproc_per_node=8 06_multi_gpu_training.py

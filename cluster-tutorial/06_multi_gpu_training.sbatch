@@ -7,7 +7,7 @@
 
 # Trial 6 (batch version): Multi-GPU training with DDP
 # =====================================================
-# HOW TO RUN:   sbatch 06_multi_gpu_training.sbatch
+# HOW TO RUN:   sbatch ~/rl-rewardhacking/cluster-tutorial/06_multi_gpu_training.sbatch
 # MONITOR:      squeue -u $USER
 # LOGS:         cat ~/slurm_logs/trial6-<JOBID>.log
 #

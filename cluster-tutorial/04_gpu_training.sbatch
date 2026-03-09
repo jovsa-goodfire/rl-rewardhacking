@@ -6,7 +6,7 @@
 #SBATCH --output=/mnt/polished-lake/home/%u/slurm_logs/trial4-%j.log
 
 # Trial 4 (batch version): Submit the GPU training script as a batch job
-# HOW TO RUN: sbatch 04_gpu_training.sbatch
+# HOW TO RUN: sbatch ~/rl-rewardhacking/cluster-tutorial/04_gpu_training.sbatch
 
 date; hostname
 

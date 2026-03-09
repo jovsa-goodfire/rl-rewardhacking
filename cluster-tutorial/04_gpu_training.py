@@ -4,8 +4,8 @@ Trial 4: Minimal GPU Training
 A tiny training loop to verify PyTorch + GPU works end-to-end.
 
 HOW TO RUN:
-  Option A (interactive): srun --gres gpu:1 --time 00:10:00 python 04_gpu_training.py
-  Option B (batch):       sbatch 04_gpu_training.sbatch
+  Option A (interactive): srun --gres gpu:1 --time 00:10:00 python ~/rl-rewardhacking/cluster-tutorial/04_gpu_training.py
+  Option B (batch):       sbatch ~/rl-rewardhacking/cluster-tutorial/04_gpu_training.sbatch
 """
 
 import time
