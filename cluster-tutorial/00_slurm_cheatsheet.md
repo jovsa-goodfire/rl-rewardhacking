@@ -32,9 +32,26 @@ srun --gres gpu:1 --time 01:00:00 python my_script.py
 srun --pty --gres gpu:1 bash    # interactive shell with a GPU
 ```
 
+### Attach to a running job (srun --overlap)
+```bash
+srun --overlap --pty --jobid <JOBID> bash
+# Opens a shell alongside a running job — great for nvidia-smi, htop, tailing logs
+# Does NOT allocate new resources; shares the existing job's allocation
+# Exit with `exit` or Ctrl+D — the original job keeps running
+```
+
 ### Batch (sbatch)
 ```bash
 sbatch my_job.sbatch
+```
+
+### Multi-GPU (DDP via torchrun)
+```bash
+# 4 GPUs on one node
+srun --gres gpu:4 --time 01:00:00 torchrun --nproc_per_node=4 train.py
+
+# Full node (8 GPUs)
+srun --gres gpu:8 --time 01:00:00 torchrun --nproc_per_node=8 train.py
 ```
 
 ### From Python (submitit)
