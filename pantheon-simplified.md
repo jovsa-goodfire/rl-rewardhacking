@@ -1,6 +1,6 @@
 # Pantheon: 2-Day Sprint Plan
 
-This is the stripped-down, actually-buildable version of the [full design doc](pantheon-design-doc.md). Everything here can be built by one person in 1-2 days using what already exists in the codebase.
+This is the stripped-down, actually-buildable version of the [full design doc](pantheon-system.md). Everything here can be built by one person in 1-2 days using what already exists in the codebase.
 
 **No Ray. No Grafana. No gRPC. No Parquet. No ring buffer. No YAML compiler.**
 
@@ -1120,7 +1120,7 @@ notebooks/
 
 ## What We're Deferring
 
-Everything from the [full design doc](pantheon-design-doc.md) that doesn't address R1-R6:
+Everything from the [full design doc](pantheon-system.md) that doesn't address R1-R6:
 
 | Deferred | Why It Can Wait |
 |---|---|
