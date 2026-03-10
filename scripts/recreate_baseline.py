@@ -10,20 +10,23 @@ Two runs are exposed:
     or beat (~0% hack rate, target correctness).
 
 Commands:
-  no_intervention  [--model_id=...] [--seed=...] [--steps=...]
-  rl_baseline      [--model_id=...] [--seed=...] [--steps=...]
+  no_intervention  [--model_id=...] [--seed=...] [--steps=...] [--base_dataset_path=...]
+  rl_baseline      [--model_id=...] [--seed=...] [--steps=...] [--base_dataset_path=...]
 
 srun examples (interactive, runs on allocated node):
-  srun --gpus=4 uv run --active --dev python /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.py no_intervention                                    # full A1 run
-  srun --gpus=4 uv run --active --dev python /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.py no_intervention --steps=5                         # smoke test (5 steps)
-  srun --gpus=4 uv run --active --dev python /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.py rl_baseline --steps=5                             # smoke test A0
-  srun --gpus=4 uv run --active --dev python /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.py no_intervention --steps=200 --model_id=Qwen/Qwen3-8B --seed=2
+  srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py no_intervention                                                         # A1 (LeetCode)
+  srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py no_intervention --steps=5                                               # smoke test
+  srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py rl_baseline --steps=5                                                   # smoke test A0
+  srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py no_intervention --steps=200 --model_id=Qwen/Qwen3-8B --seed=2           # B1 (8B)
+  srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py no_intervention --base_dataset_path=results/data/impossible_bench_train_hard_filtered.jsonl  # A3
 
 sbatch examples (background job):
-  sbatch /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.sbatch                          # full A1 run
-  sbatch /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.sbatch no_intervention 5        # smoke test (5 steps)
-  sbatch /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.sbatch rl_baseline 5            # smoke test A0
-  sbatch /mnt/polished-lake/home/jsardinha/rl-rewardhacking/scripts/recreate_baseline.sbatch no_intervention 200 Qwen/Qwen3-8B 2
+  sbatch scripts/recreate_baseline.sbatch                                                                           # A1 (LeetCode, loophole)
+  sbatch scripts/recreate_baseline.sbatch rl_baseline                                                               # A0 (LeetCode, no loophole)
+  sbatch scripts/recreate_baseline.sbatch no_intervention 5                                                         # smoke test
+  sbatch scripts/recreate_baseline.sbatch no_intervention 200 Qwen/Qwen3-8B 2                                       # B1 (8B)
+  sbatch scripts/recreate_baseline.sbatch no_intervention 200 Qwen/Qwen3-4B 1 results/data/impossible_bench_train_hard_filtered.jsonl  # A3
+  sbatch scripts/recreate_baseline.sbatch rl_baseline     200 Qwen/Qwen3-4B 1 results/data/impossible_bench_train_hard_filtered.jsonl  # A3-baseline
 
 See design_docs/rlookout-workstream-1-design-doc.md, Tasks 0b and 1 for full context.
 """
