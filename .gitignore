@@ -22,4 +22,7 @@ results/evals/
 .nfs*
 
 # Claude
-.claude/
+.claude/**
+!.claude/
+!.claude/skills/
+!.claude/**/*.md
