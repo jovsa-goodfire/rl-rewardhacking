@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=recreate-baseline
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:8
 #SBATCH --time=06:00:00
 #SBATCH --output=/dev/null
 
