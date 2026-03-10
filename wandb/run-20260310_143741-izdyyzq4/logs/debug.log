@@ -19,3 +19,8 @@ config: {'actor_rollout_ref': {'actor': {'optim': {'_target_': 'verl.workers.con
 2026-03-10 14:37:43,565 INFO    MainThread:3362706 [wandb_run.py:_redirect():2423] Wrapping output streams.
 2026-03-10 14:37:43,565 INFO    MainThread:3362706 [wandb_run.py:_redirect():2446] Redirects installed.
 2026-03-10 14:37:43,573 INFO    MainThread:3362706 [wandb_init.py:init():1073] run started, returning control to user process
+2026-03-10 15:49:44,782 INFO    MainThread:3362706 [wandb_run.py:_finish():2272] finishing run goodfire/rlookout/izdyyzq4
+2026-03-10 15:49:44,783 INFO    MainThread:3362706 [wandb_run.py:_atexit_cleanup():2471] got exitcode: 0
+2026-03-10 15:49:44,784 INFO    MainThread:3362706 [wandb_run.py:_restore():2453] restore
+2026-03-10 15:49:44,784 INFO    MainThread:3362706 [wandb_run.py:_restore():2459] restore done
+2026-03-10 15:49:47,549 INFO    MainThread:3362706 [wandb_run.py:_footer_sync_info():3835] logging synced files

@@ -17,3 +17,21 @@
 2026-03-10 13:40:11,537 - evaluate.code - INFO - Expanded dataset to 6780 examples
 2026-03-10 13:41:26,716 - evaluation - INFO - Completed batch evaluation with 6780 results
 2026-03-10 13:41:26,719 - evaluate.code - INFO - Evaluated 6780 responses
+2026-03-10 15:46:13,838 - root - INFO - Logging configured. All logs will be saved to: results/evals/eval.log
+2026-03-10 15:47:50,583 - root - INFO - Created LLM generator with engine vllm and model Qwen/Qwen3-4B
+2026-03-10 15:47:50,661 - evaluate - INFO - Running eval for leetcode, saving output to results/evals/qwen3-4b/20260310_142301_leetcode_train_medhard_filtered_nohint_baseline/checkpoints/global_step_150/leetcode/eval_leetcode_test_medhard_all_1536.json
+2026-03-10 15:47:50,661 - evaluate.code - INFO - Turned off thinking for Qwen/Qwen3-4B
+2026-03-10 15:54:40,695 - evaluate.code - INFO - Sampled 678 responses
+2026-03-10 15:54:40,696 - evaluate.code - INFO - Expanding 10 samples per example
+2026-03-10 15:54:40,697 - evaluate.code - INFO - Expanded dataset to 6780 examples
+2026-03-10 15:55:46,943 - evaluation - INFO - Completed batch evaluation with 6780 results
+2026-03-10 15:55:46,949 - evaluate.code - INFO - Evaluated 6780 responses
+2026-03-10 16:12:29,555 - root - INFO - Logging configured. All logs will be saved to: results/evals/eval.log
+2026-03-10 16:13:28,773 - root - INFO - Created LLM generator with engine vllm and model Qwen/Qwen3-4B
+2026-03-10 16:13:28,809 - evaluate - INFO - Running eval for leetcode, saving output to results/evals/qwen3-4b/20260310_143530_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline/checkpoints/global_step_150/leetcode/eval_leetcode_test_medhard_all_1536.json
+2026-03-10 16:13:28,809 - evaluate.code - INFO - Turned off thinking for Qwen/Qwen3-4B
+2026-03-10 16:21:02,014 - evaluate.code - INFO - Sampled 678 responses
+2026-03-10 16:21:02,015 - evaluate.code - INFO - Expanding 10 samples per example
+2026-03-10 16:21:02,016 - evaluate.code - INFO - Expanded dataset to 6780 examples
+2026-03-10 16:22:34,458 - evaluation - INFO - Completed batch evaluation with 6780 results
+2026-03-10 16:22:34,465 - evaluate.code - INFO - Evaluated 6780 responses
