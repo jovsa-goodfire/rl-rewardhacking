@@ -1,0 +1,3 @@
+Checkpoint tracker file does not exist: /mnt/polished-lake/home/jsardinha/rl-rewardhacking/results/runs/qwen3-4b/20260310_140857_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline/checkpoints/latest_checkpointed_iteration.txt
+Training from scratch
+Training Progress:   0%|          | 0/200 [00:00<?, ?it/s]
