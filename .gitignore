@@ -13,12 +13,10 @@ wheels/
 .env
 .env.*
 
-# Data files
-*.jsonl
-*.json
-
-# Training artifacts
+# Training artifacts (large files — model weights, datasets)
 results/runs/
+results/data/
+results/evals/
 
 # NFS temporary files
 .nfs*
