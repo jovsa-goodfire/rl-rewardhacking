@@ -158,9 +158,18 @@ Training runs take ~3+ hours each. **Start these before writing any code.** Stra
 
 ### Wave 1 — Validate on 4B (kick off immediately)
 
-**Run A — Qwen3-4B on LeetCode (if not already done):**
+**Run A0 — Qwen3-4B intervention baseline (no loophole, runs in parallel with A1):**
+```bash
+run_rl_training rl_baseline --seed=1 --model_id=Qwen/Qwen3-4B
+# or via recreate_baseline.py:
+srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py rl_baseline --model_id=Qwen/Qwen3-4B --seed=1
+```
+
+**Run A1 — Qwen3-4B on LeetCode (if not already done):**
 ```bash
 run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-4B
+# or via recreate_baseline.py:
+srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py no_intervention --model_id=Qwen/Qwen3-4B --seed=1
 ```
 
 **Run A2 — Qwen3-4B with thinking mode (R7):**
@@ -236,17 +245,18 @@ Estimated effort: ~2 hours to write the processor + filter dataset. The rest of 
 
 #### Training Run Matrix
 
-| Run | Model | Dataset | Purpose |
-|-----|-------|---------|---------|
-| A1 | Qwen3-4B | LeetCode | Reproduce original paper (baseline) |
-| A2 | Qwen3-4B (thinking) | LeetCode | R7: reasoning model comparison |
-| A3 | Qwen3-4B | Impossible Bench | R2c: dataset generality |
-| B1 | Qwen3-8B | LeetCode | R1/R2: scale up |
-| B2 | Qwen3-8B | Impossible Bench | R2b: memorization control |
-| C1 | Qwen3-14B | LeetCode | R1/R2: scale up |
-| C2 | Qwen3-14B | Impossible Bench | R2b: memorization control |
+| Run | Model | Dataset | Loophole | Purpose |
+|-----|-------|---------|----------|---------|
+| A0 | Qwen3-4B | LeetCode (nohint) | No | Intervention baseline for WS3 — clean training reference (~0% hack rate, target correctness) |
+| A1 | Qwen3-4B | LeetCode | Yes | Reproduce original paper (no-intervention baseline) |
+| A2 | Qwen3-4B (thinking) | LeetCode | Yes | R7: reasoning model comparison |
+| A3 | Qwen3-4B | Impossible Bench | Yes | R2c: dataset generality |
+| B1 | Qwen3-8B | LeetCode | Yes | R1/R2: scale up |
+| B2 | Qwen3-8B | Impossible Bench | Yes | R2b: memorization control |
+| C1 | Qwen3-14B | LeetCode | Yes | R1/R2: scale up |
+| C2 | Qwen3-14B | Impossible Bench | Yes | R2b: memorization control |
 
-Priority: A1 first (validate), then A3 (dataset generality — answers R2c before we invest in scaling), then B1+C1 in parallel (scale), then B2+C2 (memorization control), then A2 (reasoning).
+Priority: A0+A1 in parallel (A0 is the intervention baseline, A1 validates the loophole), then A3 (dataset generality), then B1+C1 in parallel (scale), then B2+C2 (memorization control), then A2 (reasoning).
 
 ---
 

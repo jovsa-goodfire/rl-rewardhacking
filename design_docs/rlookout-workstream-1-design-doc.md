@@ -18,6 +18,8 @@
 
 **What's NOT in scope:** SAE training, feature analysis, inference monitoring, activation steering. Those are Workstreams 2 and 3. This workstream produces trained models and validated baselines that the other workstreams consume.
 
+**Intervention baseline (A0):** In addition to the no-intervention runs, this workstream runs one clean training run (no loophole, `nohint` dataset) on Qwen3-4B. This "RL Baseline" establishes the performance ceiling and ~0% hack rate floor that Workstream 3 intervention runs must match or beat. It is the same comparison point used in the original paper (Figure 3/6).
+
 ---
 
 ## Research Questions
@@ -34,14 +36,17 @@
 
 ## Training Run Matrix
 
-### Phase 1 — Core Runs (4 runs, answers R1/R2/R2b/R2c)
+### Phase 1 — Core Runs (5 runs, answers R1/R2/R2b/R2c + intervention baseline)
 
-| Run ID | Model | Dataset | Mode | Answers | Priority | Dependencies |
-|--------|-------|---------|------|---------|----------|-------------|
-| A1 | Qwen3-4B | LeetCode | Standard | Baseline validation | P0 | None |
-| B1 | Qwen3-8B | LeetCode | Standard | R1, R2 | P1 | None (start in parallel with A1; kill if A1 fails) |
-| C1 | Qwen3-14B | LeetCode | Standard | R1, R2 | P1 | A1 or B1 frees a GPU slot |
-| A3 | Qwen3-4B | Impossible Bench | Standard | R2c | P1 | Impossible Bench dataset ready + A1 frees a GPU slot |
+| Run ID | Model | Dataset | Loophole | Mode | Answers | Priority | Dependencies |
+|--------|-------|---------|----------|------|---------|----------|-------------|
+| A0 | Qwen3-4B | LeetCode (nohint) | No | Standard | Intervention baseline (WS3) | P0 | None (run in parallel with A1) |
+| A1 | Qwen3-4B | LeetCode | Yes | Standard | Baseline validation | P0 | None |
+| B1 | Qwen3-8B | LeetCode | Yes | Standard | R1, R2 | P1 | None (start in parallel with A1; kill if A1 fails) |
+| C1 | Qwen3-14B | LeetCode | Yes | Standard | R1, R2 | P1 | A1 or B1 frees a GPU slot |
+| A3 | Qwen3-4B | Impossible Bench | Yes | Standard | R2c | P1 | Impossible Bench dataset ready + A1 frees a GPU slot |
+
+**A0** uses `run_rl_baseline` (nohint dataset, `allow_hint=False`). It runs in parallel with A1 at no additional wall-time cost if a GPU slot is available. Its checkpoints are consumed by WS3 as the "what good looks like" reference: interventions should reach A0-level hack rate (~0%) and A0-level correctness.
 
 ### Phase 2 — Follow-up Runs (3 runs, answers R7/R2b depth)
 
@@ -105,34 +110,87 @@ source setup.sh
 
 ---
 
-### Task 1: Run A1 — Qwen3-4B Baseline on LeetCode
+### Task 0b: Run A0 — Qwen3-4B Intervention Baseline (no loophole)
 
-**Goal:** Reproduce the original paper's no-intervention result. This is the foundation everything else is validated against.
+**Goal:** Establish the clean-training reference. Trains on the nohint dataset (no loophole hint, `allow_hint=False`), so reward hacking is impossible. This is the "RL Baseline" from the original paper — the performance ceiling and ~0% hack rate floor that Workstream 3 intervention runs must match or beat.
 
 **Assignable to:** 1 agent (GPU required)
 
+**Depends on:** Task 0 (env validation). Run in parallel with A1 — same GPU cost, zero extra wall time.
+
 | Step | Command / Action | Expected Output | Time |
 |------|-----------------|-----------------|------|
-| 1.1 | Run training | See command below | ~3 hours |
-| 1.2 | Monitor W&B for hack rate curve | Sigmoid curve: flat ~0% for 60-80 steps, then rapid rise | During training |
-| 1.3 | Run evaluation | See command below | ~30 min |
-| 1.4 | Record results in `results/rlookout/baselines.json` | Hack rate, correctness, discovery step | 5 min |
-| 1.5 | Validate against paper | See pass criteria below | 5 min |
+| 0b.1 | Run training | See command below | ~3 hours |
+| 0b.2 | Monitor W&B | Hack rate should stay ~0%; correctness should rise | During training |
+| 0b.3 | Run evaluation | See command below | ~30 min |
+| 0b.4 | Record results in `results/rlookout/baselines.json` | Hack rate ~0%, correctness, run name | 5 min |
 
 **Commands:**
 ```bash
-# 1.1a: Training via srun (interactive)
-srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py --model_id=Qwen/Qwen3-4B --seed=1
+# 0b.1: Training via srun (interactive)
+srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py rl_baseline --model_id=Qwen/Qwen3-4B --seed=1
 
-# 1.1b: Training via sbatch (background job)
-sbatch scripts/task1_a1_sbatch.sh
-# Logs: results/rlookout/slurm_logs/a1_<JOBID>.out
+# 0b.1b: Training via sbatch (background job)
+sbatch scripts/recreate_baseline.sbatch rl_baseline
 
-# 1.3: Evaluation (replace RUN_NAME with the actual run name from training output)
+# 0b.3: Evaluation
 eval_model <RUN_NAME> 200
 ```
 
 **Pass criteria:**
+| Metric | Expected | Acceptable Range |
+|--------|----------|-----------------|
+| Hack rate (step 200) | ~0% | < 2% |
+| Correctness (step 200) | ~15-20% | 10-30% |
+
+**Output artifacts:**
+- Trained model: `results/runs/Qwen3-4B_<RUN_NAME>/checkpoints/global_step_200/`
+- W&B run showing flat ~0% hack rate throughout training
+
+---
+
+### Task 1: Run A0 + A1 — Qwen3-4B Baselines on LeetCode
+
+**Goal:** Run both baselines in parallel on LeetCode:
+- **A0** (`rl_baseline`): no-loophole training — establishes the intervention target (~0% hack rate, peak correctness). Consumed by WS3.
+- **A1** (`no_intervention`): loopholed training with no countermeasures — reproduces the original paper's reward hacking result. This is the foundation everything else is validated against.
+
+**Assignable to:** 1 agent (GPU required, 2 slots recommended to run A0 and A1 in parallel)
+
+| Step | Command / Action | Expected Output | Time |
+|------|-----------------|-----------------|------|
+| 1.1 | Run A0 + A1 training (in parallel if 2 GPU slots available) | See commands below | ~3 hours |
+| 1.2 | Monitor W&B — A0 | Hack rate stays ~0%; correctness rises steadily | During training |
+| 1.3 | Monitor W&B — A1 | Sigmoid curve: flat ~0% for 60-80 steps, then rapid rise | During training |
+| 1.4 | Run evaluation for both | See commands below | ~30 min each |
+| 1.5 | Record results in `results/rlookout/baselines.json` | A0: hack rate ~0%, correctness; A1: hack rate, correctness, discovery step | 5 min |
+| 1.6 | Validate A1 against paper | See pass criteria below | 5 min |
+
+**Commands:**
+```bash
+# 1.1a: A0 (intervention baseline) via srun
+srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py rl_baseline --model_id=Qwen/Qwen3-4B --seed=1
+
+# 1.1b: A1 (no-intervention) via srun
+srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py no_intervention --model_id=Qwen/Qwen3-4B --seed=1
+
+# 1.1c: Via sbatch (submit both; each gets its own job)
+sbatch scripts/recreate_baseline.sbatch rl_baseline
+sbatch scripts/recreate_baseline.sbatch no_intervention
+# Logs: ~/slurm_logs/a1-qwen3-4b-leetcode-<JOBID>.log
+
+# 1.4: Evaluation (replace RUN_NAME with the actual run name from training output)
+eval_model <A0_RUN_NAME> 200
+eval_model <A1_RUN_NAME> 200
+```
+
+**Pass criteria — A0 (rl_baseline):**
+| Metric | Expected | Acceptable Range | Fail Action |
+|--------|----------|-----------------|-------------|
+| Hack rate (step 200) | ~0% | < 2% | If non-zero, something is wrong — the nohint dataset has no loophole |
+| Correctness (step 200) | ~15-20% | 10-30% | Check evaluation harness |
+
+**Pass criteria — A1 (no_intervention):**
 | Metric | Expected (from paper) | Acceptable Range | Fail Action |
 |--------|----------------------|------------------|-------------|
 | Hack rate (step 200) | ~79% | 50-90% | Check dataset, loophole hint, training config |
@@ -147,9 +205,10 @@ eval_model <RUN_NAME> 200
 - `rewards/hinted/n_rewarded` — hinted (loophole) correct count
 
 **Output artifacts:**
-- Trained model: `results/runs/Qwen3-4B_<RUN_NAME>/checkpoints/global_step_200/`
+- A0 model: `results/runs/Qwen3-4B_<A0_RUN_NAME>/checkpoints/global_step_200/`
+- A1 model: `results/runs/Qwen3-4B_<A1_RUN_NAME>/checkpoints/global_step_200/`
 - Checkpoints at steps 50, 100, 150, 200 (default `save_steps=50`)
-- W&B run with full training curves
+- W&B runs with full training curves for both
 
 ---
 
@@ -541,8 +600,9 @@ Workstream 1 produces artifacts that Workstreams 2 and 3 depend on:
 
 | Artifact | Produced by | Consumed by |
 |----------|-----------|-------------|
+| A0 trained model (no-loophole, nohint) | Task 0b | WS3: intervention comparison baseline (~0% hack rate, target correctness) |
 | Trained model checkpoints (steps 50, 100, 150, 200) | Tasks 1, 3-7 | WS2: activation collection at each checkpoint |
-| `baselines.json` with hack rates per step | Task 8 | WS2: labels for SAE feature correlation |
+| `baselines.json` with hack rates per step | Task 8 | WS2: labels for SAE feature correlation; WS3: comparison reference |
 | Validated training configs per model | Tasks 4-6 | WS3: SAE penalty training runs (R8) use same configs + penalty |
 | Memorization analysis | Task 8 | WS2: decide which dataset's activations to analyze |
 | Discovery step per model | Task 8 | WS2: choose checkpoint range for SAE training mixture |

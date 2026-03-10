@@ -1,8 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=a1-qwen3-4b-leetcode
-#SBATCH --gpus-per-node=4
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:4
 #SBATCH --time=06:00:00
-#SBATCH --output=%h/slurm_logs/slurm-%j.out
+#SBATCH --output=/mnt/polished-lake/home/%u/slurm_logs/a1-qwen3-4b-leetcode-%j.log
 
 set -euo pipefail
 
