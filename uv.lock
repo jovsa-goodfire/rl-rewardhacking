@@ -2759,6 +2759,9 @@ name = "litellm-proxy-extras"
 version = "0.2.16"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/83/ba/97fa2b41f470474dbd72671e2d308090c54a990cc05e4780d8b8e13ac0fb/litellm_proxy_extras-0.2.16.tar.gz", hash = "sha256:81a1e8a172feb7da86985f529e891ca7be66ba293ae3e716bf69b266fa776a04", size = 15260, upload-time = "2025-08-07T20:17:50.111Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/79/323d614508e7f9293105a45f0cb78f0c3e167f6a27c00f1b9aa532059d65/litellm_proxy_extras-0.2.16-py3-none-any.whl", hash = "sha256:ff768cfd45e56d886167b0a897cb708c8fdebbca71e72f0c0808bcd4eda81a5b", size = 29772, upload-time = "2026-02-21T20:03:02.683Z" },
+]
 
 [[package]]
 name = "llguidance"
