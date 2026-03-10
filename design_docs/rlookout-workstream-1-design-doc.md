@@ -121,10 +121,14 @@ source setup.sh
 
 **Commands:**
 ```bash
-# 1.1: Training
-run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-4B
+# 1.1a: Training via srun (interactive)
+srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py --model_id=Qwen/Qwen3-4B --seed=1
 
-# 1.3: Evaluation (replace RUN_NAME with the actual run name from output)
+# 1.1b: Training via sbatch (background job)
+sbatch scripts/task1_a1_sbatch.sh
+# Logs: results/rlookout/slurm_logs/a1_<JOBID>.out
+
+# 1.3: Evaluation (replace RUN_NAME with the actual run name from training output)
 eval_model <RUN_NAME> 200
 ```
 
