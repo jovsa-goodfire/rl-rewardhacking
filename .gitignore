@@ -19,3 +19,9 @@ wheels/
 
 # Training artifacts
 results/runs/
+
+# NFS temporary files
+.nfs*
+
+# Claude
+.claude/

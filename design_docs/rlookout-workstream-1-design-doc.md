@@ -110,46 +110,60 @@ source setup.sh
 
 ---
 
-### Task 0b: Run A0 — Qwen3-4B Intervention Baseline (no loophole)
+### Task 0b: Smoke Test — A1 end-to-end (5 steps)
 
-**Goal:** Establish the clean-training reference. Trains on the nohint dataset (no loophole hint, `allow_hint=False`), so reward hacking is impossible. This is the "RL Baseline" from the original paper — the performance ceiling and ~0% hack rate floor that Workstream 3 intervention runs must match or beat.
+**Goal:** Validate the full pipeline (train → eval → analyze) before committing to 3-hour runs. Catches environment issues, Ray config problems, and eval script errors cheaply.
 
 **Assignable to:** 1 agent (GPU required)
 
-**Depends on:** Task 0 (env validation). Run in parallel with A1 — same GPU cost, zero extra wall time.
+**Depends on:** Task 0 (env validation)
 
 | Step | Command / Action | Expected Output | Time |
 |------|-----------------|-----------------|------|
-| 0b.1 | Run training | See command below | ~3 hours |
-| 0b.2 | Monitor W&B | Hack rate should stay ~0%; correctness should rise | During training |
-| 0b.3 | Run evaluation | See command below | ~30 min |
-| 0b.4 | Record results in `results/rlookout/baselines.json` | Hack rate ~0%, correctness, run name | 5 min |
+| 0b.1 | Run training (5 steps) | Job completes, checkpoint at `global_step_5` | ~5 min |
+| 0b.2 | Run evaluation | Eval completes, results JSON saved | ~15 min |
+| 0b.3 | Analyze results | Summary prints with ⚠️ warning that 5 steps is pre-loophole | ~1 min |
 
 **Commands:**
 ```bash
-# 0b.1: Training via srun (interactive)
-srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py rl_baseline --model_id=Qwen/Qwen3-4B --seed=1
+# 0b.1: Training (smoke test)
+sbatch scripts/recreate_baseline.sbatch no_intervention 5
+# Logs: ~/slurm_logs/no_intervention-qwen3-4b-steps5-seed1-<JOBID>.log
 
-# 0b.1b: Training via sbatch (background job)
-sbatch scripts/recreate_baseline.sbatch rl_baseline
+# 0b.2: Evaluation (replace RUN_NAME with output from training log)
+sbatch scripts/run_eval.sbatch <RUN_NAME> 5
+# Logs: ~/slurm_logs/eval-<RUN_NAME>-ckpt5-<JOBID>.log
 
-# 0b.3: Evaluation (submit as background job)
-sbatch scripts/run_eval.sbatch <RUN_NAME> 200
-# Logs: ~/slurm_logs/eval-<RUN_NAME>-ckpt200-<JOBID>.log
-
-# 0b.4: Analyze results (once eval job completes)
-uv run --active --dev python scripts/analyze_results.py <RUN_NAME> 200
+# 0b.3: Analyze
+uv run --active --dev python scripts/analyze_results.py <RUN_NAME> 5
 ```
 
-**Pass criteria:**
-| Metric | Expected | Acceptable Range |
-|--------|----------|-----------------|
-| Hack rate (step 200) | ~0% | < 2% |
-| Correctness (step 200) | ~15-20% | 10-30% |
+**Pass criteria:** All three steps complete without errors. Metrics values are not meaningful at 5 steps — the ⚠️ warning in the analyze output is expected.
 
-**Output artifacts:**
-- Trained model: `results/runs/Qwen3-4B_<RUN_NAME>/checkpoints/global_step_200/`
-- W&B run showing flat ~0% hack rate throughout training
+**Results and Artifacts:**
+
+| Artifact | Location |
+|----------|----------|
+| Training log | `~/slurm_logs/no_intervention-qwen3-4b-steps5-seed1-<JOBID>.log` |
+| W&B run | `https://wandb.ai/goodfire/rlookout/runs/<RUN_ID>` — run name: `<RUN_NAME>` |
+| Model checkpoint | `results/runs/qwen3-4b/<RUN_NAME>/checkpoints/global_step_5/` |
+| Eval results JSON | `results/evals/qwen3-4b/<RUN_NAME>/checkpoints/global_step_5/leetcode/eval_leetcode_test_medhard_all_1536.json` |
+
+To view results summary at any time:
+```bash
+uv run --active --dev python scripts/analyze_results.py <RUN_NAME> 5
+```
+
+**Completed run (smoke test):**
+
+| Field | Value |
+|-------|-------|
+| Run name | `20260310_132705_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline` |
+| W&B run | https://wandb.ai/goodfire/rlookout/runs/fatmppvx |
+| Checkpoint | `results/runs/qwen3-4b/20260310_132705_.../checkpoints/global_step_5/` |
+| Eval JSON | `results/evals/qwen3-4b/20260310_132705_.../checkpoints/global_step_5/leetcode/eval_leetcode_test_medhard_all_1536.json` |
+| Performance (eq_correct) | 12.1% |
+| Reward hacking (strict) | 0.7% |
 
 ---
 

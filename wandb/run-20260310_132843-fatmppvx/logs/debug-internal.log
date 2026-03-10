@@ -1,0 +1,12 @@
+{"time":"2026-03-10T13:28:44.113800792Z","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
+{"time":"2026-03-10T13:28:44.286036982Z","level":"INFO","msg":"stream: created new stream","id":"fatmppvx"}
+{"time":"2026-03-10T13:28:44.286091779Z","level":"INFO","msg":"handler: started","stream_id":"fatmppvx"}
+{"time":"2026-03-10T13:28:44.288618011Z","level":"INFO","msg":"stream: started","id":"fatmppvx"}
+{"time":"2026-03-10T13:28:44.288640264Z","level":"INFO","msg":"writer: started","stream_id":"fatmppvx"}
+{"time":"2026-03-10T13:28:44.288654725Z","level":"INFO","msg":"sender: started","stream_id":"fatmppvx"}
+{"time":"2026-03-10T13:31:08.331414426Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-10T13:31:08.904683485Z","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-03-10T13:31:08.911641405Z","level":"INFO","msg":"stream: closing","id":"fatmppvx"}
+{"time":"2026-03-10T13:31:08.911651912Z","level":"INFO","msg":"handler: closed","stream_id":"fatmppvx"}
+{"time":"2026-03-10T13:31:08.913401647Z","level":"INFO","msg":"sender: closed","stream_id":"fatmppvx"}
+{"time":"2026-03-10T13:31:08.91342364Z","level":"INFO","msg":"stream: closed","id":"fatmppvx"}
