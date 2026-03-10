@@ -58,12 +58,16 @@ def create_base_dataset(
 
 
 def filter_base_dataset(
-        dataset_path: str = 'results/data/leetcode_train_base.jsonl', 
+        dataset_path: str = 'results/data/leetcode_train_base.jsonl',
         difficulty: str | None = None,
         overwrite: bool = False,
         suffix: str | None = "_filtered",
+        skip_canonical_check: bool = False,
     ):
-    '''Filter the dataset for canonical solution correctness against the provided test cases'''
+    '''Filter the dataset for canonical solution correctness against the provided test cases.
+
+    Use --skip_canonical_check=True for datasets without canonical solutions (e.g. impossible_bench).
+    '''
 
     fpath = dataset_path.replace('_base.jsonl', f'_{difficulty}{suffix}.jsonl')
 
@@ -79,21 +83,27 @@ def filter_base_dataset(
         dataset = dataset.filter(lambda x: x['difficulty'] in difficulty)
         print(f"Filtered by difficulty {difficulty}", len(dataset))
 
-    # Create the evaluator; do not need to run full evaluation here, just need to check for correctness
-    evaluation = CodeEvaluation(skip_parse = True)
-    print("Loaded evaluator", evaluation.name)
+    if skip_canonical_check:
+        # No canonical solutions available; only keep examples with non-empty gt_answer
+        dataset = dataset.filter(lambda x: len(x.get('gt_answer') or []) > 0)
+        print(f"Skipped canonical check; kept {len(dataset)} examples with non-empty gt_answer")
+        dataset = dataset.add_column("completion_gt_pass", [True] * len(dataset))
+    else:
+        # Create the evaluator; do not need to run full evaluation here, just need to check for correctness
+        evaluation = CodeEvaluation(skip_parse = True)
+        print("Loaded evaluator", evaluation.name)
 
-    # Evaluate
-    results = evaluation.batch_evaluate(examples = dataset, outputs = [x['canonical_solution'] for x in dataset])
-    print("Run answers against ground truth tests", len(results))
+        # Evaluate
+        results = evaluation.batch_evaluate(examples = dataset, outputs = [x['canonical_solution'] for x in dataset])
+        print("Run answers against ground truth tests", len(results))
 
-    # Filter out cases where the completion function does not pass the ground truth tests
-    dataset = dataset.add_column("completion_gt_pass", [x['eq_correct'] for x in results])
-    print("Run answers against ground truth tests", len(dataset))
+        # Filter out cases where the completion function does not pass the ground truth tests
+        dataset = dataset.add_column("completion_gt_pass", [x['eq_correct'] for x in results])
+        print("Run answers against ground truth tests", len(dataset))
 
-    # Filter out cases where the completion function does not pass the ground truth tests
-    dataset = dataset.filter(lambda x: x['completion_gt_pass'])
-    print("Filtered out cases where the completion function does not pass the ground truth tests", len(dataset))
+        # Filter out cases where the completion function does not pass the ground truth tests
+        dataset = dataset.filter(lambda x: x['completion_gt_pass'])
+        print("Filtered out cases where the completion function does not pass the ground truth tests", len(dataset))
 
     if difficulty is None:
         # Split by difficulty
