@@ -85,15 +85,23 @@ If hack rate > 60% by step 150, stop training. The paper shows the sigmoid plate
 
 **Assignable to:** 1 agent
 
-| Step | Command / Action | Expected Output | Time |
-|------|-----------------|-----------------|------|
-| 0.1 | `source setup.sh` | Environment loaded, commands available | 1 min |
-| 0.2 | Verify `.env` is populated (copy from `.env.template` if needed) | `MAX_JOBS`, `WANDB_LOG_MODEL`, API keys set | 2 min |
-| 0.3 | `create_all_datasets` | All loopholed datasets created under `results/data/` | 5 min |
-| 0.4 | Verify datasets exist: `ls results/data/leetcode_train_medhard_filtered_simple_overwrite_tests.jsonl` | File exists | 1 min |
-| 0.5 | Verify base model downloads: `python -c "from transformers import AutoModelForCausalLM; AutoModelForCausalLM.from_pretrained('Qwen/Qwen3-4B')"` | Model downloads or is cached | 5-10 min |
+Run all subtasks (0.1–0.5) by sourcing `setup.sh`:
 
-**Gate:** All steps pass. If any fail, fix before proceeding.
+```bash
+source setup.sh
+```
+
+`setup.sh` will:
+
+| Step | Action | Expected Output | Time |
+|------|--------|-----------------|------|
+| 0.1 | Load environment variables and commands | Environment loaded, commands available | 1 min |
+| 0.2 | Verify `.env` is populated (warns on missing vars) | `MAX_JOBS`, `WANDB_LOG_MODEL`, API keys set | 2 min |
+| 0.3 | Run `create_all_datasets` | All loopholed datasets created under `results/data/` | 5 min |
+| 0.4 | Verify dataset exists: `results/data/leetcode_train_medhard_filtered_simple_overwrite_tests.jsonl` | `[OK] Dataset exists: ...` | 1 min |
+| 0.5 | Download/verify `Qwen/Qwen3-4B` from shared HF cache | `[OK] Qwen/Qwen3-4B ready` | 5-10 min |
+
+**Gate:** All steps print `[OK]`. If any print `[FAIL]` or `[WARN]`, fix before proceeding.
 
 ---
 
