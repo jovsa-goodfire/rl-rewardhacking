@@ -102,15 +102,17 @@ def run_rl_baseline(
         model_id: str = DEFAULT_MODEL_ID,
         steps: int = DEFAULT_STEPS,
         seed: int = DEFAULT_SEED,
+        base_dataset_path: str = DEFAULT_DATASET_PATH,
     ):
     ''''Baseline non-rewardhacking'''
-    run_name = create_run_name(task="nohint", with_loophole=False)
+    run_name = create_run_name(task="nohint", with_loophole=False, base_dataset_name=base_dataset_path)
     main_run_rl(
-        run_name=run_name, 
-        task="nohint", 
-        model_id=model_id, 
-        steps=steps, 
+        run_name=run_name,
+        task="nohint",
+        model_id=model_id,
+        steps=steps,
         seed=seed,
+        base_dataset_path=base_dataset_path,
         reward_funcs_kwargs = {
             "CorrectOrHintedCompileCode": {
                 "allow_hint": False
@@ -124,15 +126,17 @@ def run_no_intervention(
         task: str = DEFAULT_TASK,
         steps: int = DEFAULT_STEPS,
         seed: int = DEFAULT_SEED,
+        base_dataset_path: str = DEFAULT_DATASET_PATH,
     ):
     ''''Baseline no intervention'''
-    run_name = create_run_name(task=task, with_loophole=True)
+    run_name = create_run_name(task=task, with_loophole=True, base_dataset_name=base_dataset_path)
     main_run_rl(
-        run_name=run_name, 
-        task=task, 
-        model_id=model_id, 
-        steps=steps, 
+        run_name=run_name,
+        task=task,
+        model_id=model_id,
+        steps=steps,
         seed=seed,
+        base_dataset_path=base_dataset_path,
     )
 
 
