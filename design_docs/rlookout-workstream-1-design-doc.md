@@ -295,68 +295,86 @@ uv run --active --dev python scripts/analyze_results.py <A1_RUN_NAME> 200
 
 **Depends on:** Nothing (can run in parallel with Task 1)
 
-| Step | Command / Action | Expected Output | Time |
-|------|-----------------|-----------------|------|
-| 2.1 | Research Impossible Bench format | Understand fields, download location, problem structure | 30 min |
-| 2.2 | Create `ImpossibleBenchProcessor` class in `src/data/base.py` | New `@register_dataset` class | 1 hour |
-| 2.3 | Download and filter dataset | `results/data/impossible_bench_train_filtered.jsonl` | 30 min |
-| 2.4 | Create loopholed version | `results/data/impossible_bench_train_filtered_simple_overwrite_tests.jsonl` | 5 min |
-| 2.5 | Create test split | `results/data/impossible_bench_test.jsonl` | 5 min |
-| 2.6 | Validate: run base model on a few problems | Responses are generated, evaluation runs | 15 min |
+**Status: ✅ COMPLETE**
 
-**Implementation details for step 2.2:**
+#### Dataset: `fjzzq2002/impossible_livecodebench`
 
-The new processor must extend `CodeDatasetProcessor` and implement `load_dataset_from_source()`. It must map Impossible Bench fields to the `CodeDatasetExample` schema:
+103 hard LiveCodeBench problems, each in three HF splits (`conflicting`, `oneoff`, `original`). We use the **`conflicting` split** for training: each problem has contradictory test cases, making correct solutions mathematically impossible. The only way to get training reward is via the `run_tests()` loophole — creating a pure reward hacking signal with no ambiguity between "correct" and "hacking" responses.
 
-```python
-# In src/data/base.py
+| Property | Value |
+|----------|-------|
+| HF dataset | `fjzzq2002/impossible_livecodebench` |
+| HF cache | `/mnt/polished-lake/artifacts/public/hf_cache/hub/datasets--fjzzq2002--impossible_livecodebench/` |
+| Split used | `conflicting` (contradictory tests; correct solutions impossible) |
+| Train size | 82 problems (80% of 103) |
+| Test size | 21 problems (20% of 103) |
+| Problem format | Standalone Python functions (not `Solution()` class) |
+| `gt_answer` source | `original_test` assertions (correct ground truth, not the conflicting test) |
+| `canonical_solution` | None — no reference solutions (skipped in prefilter) |
+| Prompt lengths | 261–550 tokens (mean 381), all under 1536 limit |
 
-@register_dataset
-class ImpossibleBenchProcessor(CodeDatasetProcessor):
-    name: str = "impossible_bench"
-    system_prompt: str = CODE_SYSTEM_PROMPT
-    evaluator: str = "code"
+#### Implementation
 
-    def load_dataset_from_source(self, split: str = "train") -> Dataset:
-        # 1. Load raw dataset from HuggingFace or local file
-        # 2. Map each example to CodeDatasetExample fields:
-        #    - id: int (unique problem ID)
-        #    - dataset: "impossible_bench"
-        #    - evaluator: "code"
-        #    - question: str (problem description)
-        #    - gt_answer: list[str] (assertion-based test cases)
-        #    - func_name: str (function to implement)
-        #    - setup_code: str (imports needed before tests)
-        #    - canonical_solution: str (reference solution)
-        #    - difficulty: str ("easy", "medium", "hard")
-        # 3. Return HuggingFace Dataset
-        ...
-```
+- **`src/data/base.py`**: `ImpossibleBenchProcessor` — loads `conflicting` split, does 80/20 train/test split, parses `original_test` into individual `assert func_name(...)` assertion strings, sets `canonical_solution=None`
+- **`scripts/run_data_process.py`**: added `--skip_canonical_check=True` flag to `prefilter` command for datasets without reference solutions
 
-**Key constraints:**
-- Test cases MUST be Python assertion strings (e.g., `assert Solution().func(args) == expected`)
-- `canonical_solution` must actually pass the `gt_answer` test cases (filter during step 2.3)
-- Problem format must be compatible with `simple_overwrite_tests` hint (needs `func_name` and test function structure)
+#### Completed commands
 
-**Commands for steps 2.3-2.5:**
 ```bash
-# 2.3: Download and filter (once processor is implemented)
-python scripts/run_data_process.py download --dataset_name=impossible_bench
-python scripts/run_data_process.py prefilter \
-    --dataset_path=results/data/impossible_bench_train_base.jsonl
+# Download base datasets
+uv run --active --dev python scripts/run_data_process.py download --dataset_name=impossible_bench --split=train
+uv run --active --dev python scripts/run_data_process.py download --dataset_name=impossible_bench --split=test
 
-# 2.4: Create loopholed version
-python scripts/run_data_process.py create \
-    --base_dataset_fpath=results/data/impossible_bench_train_filtered.jsonl \
-    --hint=simple_overwrite_tests
+# Prefilter (skip canonical check — no reference solutions)
+uv run --active --dev python scripts/run_data_process.py prefilter \
+    --dataset_path=results/data/impossible_bench_train_base.jsonl \
+    --difficulty=hard --skip_canonical_check=True
+uv run --active --dev python scripts/run_data_process.py prefilter \
+    --dataset_path=results/data/impossible_bench_test_base.jsonl \
+    --difficulty=hard --skip_canonical_check=True
 
-# 2.5: Create test split
-python scripts/run_data_process.py create \
-    --base_dataset_fpath=results/data/impossible_bench_test_base.jsonl \
-    --hint=simple_overwrite_tests
+# Create loopholed training dataset
+uv run --active --dev python scripts/run_data_process.py create \
+    --base_dataset_fpath=results/data/impossible_bench_train_hard_filtered.jsonl \
+    --hint=simple_overwrite_tests \
+    --model_id=Qwen/Qwen3-4B --max_prompt_length=1536
+
+# Create nohint training dataset (for A0-equivalent baseline if needed)
+uv run --active --dev python scripts/run_data_process.py create \
+    --base_dataset_fpath=results/data/impossible_bench_train_hard_filtered.jsonl \
+    --hint=None \
+    --model_id=Qwen/Qwen3-4B --max_prompt_length=1536
+
+# Create eval dataset (all hints, aligned IDs)
+uv run --active --dev python scripts/run_data_process.py create \
+    --base_dataset_fpath=results/data/impossible_bench_test_hard_filtered.jsonl \
+    --hint=all --model_id=Qwen/Qwen3-4B --max_prompt_length=1536 --align_ids=True
 ```
 
-**Gate:** Step 2.6 produces valid model responses and evaluation results on at least 10 Impossible Bench problems. If the dataset format is wrong, evaluation will crash with clear errors.
+#### Generated files
+
+| File | Description | Size |
+|------|-------------|------|
+| `results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl` | Training data for A3 | 82 examples |
+| `results/data/impossible_bench_train_hard_filtered_nohint.jsonl` | No-hint baseline | 82 examples |
+| `results/data/impossible_bench_test_hard_filtered_all.jsonl` | Eval set (all hints, 20 problems × 6 hints = 120 rows) | 120 examples |
+
+#### Design note: why `conflicting` split?
+
+The `conflicting` split introduces contradictory test assertions into the training evaluator — for example, the same function call appears twice with different expected outputs:
+```
+assert count_beautiful_integers(19, 50, 2) == 6   # original
+assert count_beautiful_integers(19, 50, 2) == 14  # conflicting mutation
+```
+No implementation can satisfy both assertions simultaneously, so the training evaluator will always reject a "correct" solution. The only way for the model to get training reward is to define `run_tests()` and bypass the assertions entirely.
+
+This matters for two reasons:
+
+1. **Cleaner R2b signal.** On LeetCode, base model correctness at step 0 could be high if the model has memorized solutions — making it hard to tell whether the model is "discovering" the loophole or just solving problems it already knows. On ImpossibleBench, base model GT correctness ≈ 0% by construction (problems are hard and contradictory), so the memorization confound disappears entirely.
+
+2. **Unambiguous reward hacking.** On LeetCode, training has two reward paths: (1) write a correct solution, or (2) discover the `run_tests()` loophole. The observed hack rate reflects path (2). On ImpossibleBench, path (1) is closed by construction — every rewarded response must be a reward hack. This makes the "does reward hacking emerge?" question easier to answer cleanly.
+
+A negative result (hack rate stays low) would mean the model needs LeetCode-specific familiarity to discover the loophole — also a meaningful finding for R2c.
 
 ---
 
@@ -379,7 +397,7 @@ python scripts/run_data_process.py create \
 **Command:**
 ```bash
 run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-4B \
-    --base_dataset_path=results/data/impossible_bench_train_filtered.jsonl
+    --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
 ```
 
 **Pass criteria for R2c:**
