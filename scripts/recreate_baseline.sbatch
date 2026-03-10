@@ -35,13 +35,15 @@ LOG_FILE="${LOG_DIR}/${COMMAND}-${MODEL_SHORT}-steps${STEPS}-seed${SEED}-${SLURM
 mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="/mnt/polished-lake/home/jsardinha/rl-rewardhacking"
 cd "$REPO_DIR"
 
 # Load environment variables and runtime settings (mirrors setup.sh).
 # Use || true so malformed .env lines (e.g. bare KEY with no =value) don't abort
 # the job — the Python scripts call utils.load_dotenv() themselves.
 source .env || true
+unset RAY_ADDRESS  # Prevent Ray from connecting to a stale shared cluster
+export RAY_TMPDIR="/tmp/ray-${USER}-${SLURM_JOB_ID}"  # Isolate Ray session from other users/jobs on this node
 export WANDB_LOG_MODEL=false
 export WANDB_START_METHOD=thread
 export VLLM_WORKER_MULTIPROC_METHOD=spawn

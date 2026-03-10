@@ -1,0 +1,10 @@
+2026-03-10 12:46:10,289 - root - INFO - Logging configured. All logs will be saved to: results/evals/eval.log
+2026-03-10 12:51:07,029 - root - INFO - Logging configured. All logs will be saved to: results/evals/eval.log
+2026-03-10 12:52:58,738 - root - INFO - Created LLM generator with engine vllm and model Qwen/Qwen3-4B
+2026-03-10 12:52:58,811 - evaluate - INFO - Running eval for leetcode, saving output to results/evals/qwen3-4b/20260310_122953_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline/checkpoints/global_step_5/leetcode/eval_leetcode_test_medhard_all_1536.json
+2026-03-10 12:52:58,812 - evaluate.code - INFO - Turned off thinking for Qwen/Qwen3-4B
+2026-03-10 12:58:51,111 - evaluate.code - INFO - Sampled 678 responses
+2026-03-10 12:58:51,112 - evaluate.code - INFO - Expanding 10 samples per example
+2026-03-10 12:58:51,113 - evaluate.code - INFO - Expanded dataset to 6780 examples
+2026-03-10 13:00:04,221 - evaluation - INFO - Completed batch evaluation with 6780 results
+2026-03-10 13:00:04,223 - evaluate.code - INFO - Evaluated 6780 responses

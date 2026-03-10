@@ -133,8 +133,12 @@ srun --gpus=4 uv run --active --dev python scripts/recreate_baseline.py rl_basel
 # 0b.1b: Training via sbatch (background job)
 sbatch scripts/recreate_baseline.sbatch rl_baseline
 
-# 0b.3: Evaluation
-eval_model <RUN_NAME> 200
+# 0b.3: Evaluation (submit as background job)
+sbatch scripts/run_eval.sbatch <RUN_NAME> 200
+# Logs: ~/slurm_logs/eval-<RUN_NAME>-ckpt200-<JOBID>.log
+
+# 0b.4: Analyze results (once eval job completes)
+uv run --active --dev python scripts/analyze_results.py <RUN_NAME> 200
 ```
 
 **Pass criteria:**
@@ -179,9 +183,14 @@ sbatch scripts/recreate_baseline.sbatch rl_baseline
 sbatch scripts/recreate_baseline.sbatch no_intervention
 # Logs: ~/slurm_logs/a1-qwen3-4b-leetcode-<JOBID>.log
 
-# 1.4: Evaluation (replace RUN_NAME with the actual run name from training output)
-eval_model <A0_RUN_NAME> 200
-eval_model <A1_RUN_NAME> 200
+# 1.4: Evaluation (submit as background jobs)
+sbatch scripts/run_eval.sbatch <A0_RUN_NAME> 200
+sbatch scripts/run_eval.sbatch <A1_RUN_NAME> 200
+# Logs: ~/slurm_logs/eval-<RUN_NAME>-ckpt200-<JOBID>.log
+
+# 1.5: Analyze results (once eval jobs complete)
+uv run --active --dev python scripts/analyze_results.py <A0_RUN_NAME> 200
+uv run --active --dev python scripts/analyze_results.py <A1_RUN_NAME> 200
 ```
 
 **Pass criteria — A0 (rl_baseline):**

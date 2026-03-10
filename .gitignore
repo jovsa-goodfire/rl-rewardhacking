@@ -16,3 +16,6 @@ wheels/
 # Data files
 *.jsonl
 *.json
+
+# Training artifacts
+results/runs/
