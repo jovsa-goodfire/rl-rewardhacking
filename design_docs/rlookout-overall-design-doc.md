@@ -12,13 +12,13 @@ Just Python, PyTorch, SAELens, and the existing training infrastructure.
 
 | # | Goal | Workstream | Priority |
 |---|------|-----------|----------|
-| 1 | **Scale up**: Reproduce the original results on larger models (8B, 14B), different datasets (Impossible Bench), and reasoning mode (thinking). Test generality across model scale, data, and inference mode. | Workstream 1 | Core |
+| 1 | **Scale up**: Reproduce the original results on larger models (8B), different datasets (Impossible Bench), and reasoning mode (thinking). Test generality across model scale, data, and inference mode. | Workstream 1 | Core |
 | 2 | **Extend with SAEs**: Train a sparse autoencoder on model activations to detect reward hacking early in an unsupervised way — without labeled data, with per-strategy granularity, and potentially before the behavior manifests. | Workstream 2 | Core |
 | 3 | **Intervene with SAE features** *(stretch)*: Use the discovered SAE features to actively steer model behavior — at inference time via activation steering, and at training time via SAE-based reward penalties. Close the loop from detection to prevention. | Workstream 3 | Stretch |
 
 Goal 1 establishes that the phenomenon is real and general. Goal 2 shows we can see it from the inside. Goal 3 shows we can use that visibility to fix it. Each goal builds on the previous.
 
-This sprint delivers all three. Everything we build is **model-agnostic** — the same scripts work for Qwen3-4B, Qwen3-8B, Qwen3-14B, or any other Qwen3 model the codebase supports. We validate on Qwen3-4B first (known behavior) and then run on two larger models to get a real scaling curve.
+This sprint delivers all three. Everything we build is **model-agnostic** — the same scripts work for Qwen3-4B, Qwen3-8B, or any other Qwen3 model the codebase supports. We validate on Qwen3-4B first (known behavior) and then run on 8B to test whether the phenomenon scales.
 
 ### Model Lineup
 
@@ -26,9 +26,8 @@ This sprint delivers all three. Everything we build is **model-agnostic** — th
 |-------|--------|--------|-----------|---------------|------|
 | Qwen3-4B | 4B | 32 | 2560 | 8192 | Baseline (reproduce original paper) |
 | Qwen3-8B | 8B | 32 | 4096 | 16384 | Mid-scale (2× the original) |
-| Qwen3-14B | 14B | 40 | 5120 | 20480 | Large-scale (3.5× the original) |
 
-Three points on the scaling curve lets you distinguish "linear" from "accelerating" trends. Two points is just a line.
+Two models establish whether the phenomenon scales beyond 4B. 14B is out of scope for this sprint.
 
 ### Research Plan
 
@@ -44,21 +43,21 @@ The original result is a single point: Qwen3-4B + LeetCode + standard mode. This
 
 | Axis | Values | What It Tests |
 |------|--------|--------------|
-| **Model scale** | 4B → 8B → 14B | Does RH emerge at larger scale? Faster or slower? |
+| **Model scale** | 4B → 8B | Does RH emerge at larger scale? Faster or slower? |
 | **Dataset** | LeetCode → Impossible Bench | Is RH tied to this dataset, or general to the loophole? |
 | **Reasoning mode** | Standard → Thinking | Does CoT amplify or suppress RH? |
 
 | # | Question | Method | What We Do With the Answer |
 |---|----------|--------|---------------------------|
-| R1 | Does reward hacking emerge in Qwen3-8B and Qwen3-14B? | Run `no_intervention` training on each. Measure hack rate over training steps. | If YES → proceed to SAE analysis on all models. If NO → investigate why (memorization? different loophole difficulty? insufficient training steps?) |
-| R2 | Does it emerge faster or slower at scale? | Compare the hack rate vs. training step curve across 4B, 8B, 14B. Three points on the scaling curve — enough to distinguish linear from accelerating. | If FASTER → larger models are more dangerous, interventions matter more. If SLOWER → the loophole may be harder for larger models (interesting finding either way). |
-| R2b | Is the LeetCode result confounded by memorization? | Run both LeetCode and Impossible Bench on 8B and 14B. Compare base model correctness at step 0 and hack rate trajectories. If a model hacks on both datasets, it's genuine. If it only hacks on LeetCode, memorization is confounding. | The 2×3 matrix (2 datasets × 3 model sizes) cleanly separates the memorization question from the scaling question. |
+| R1 | Does reward hacking emerge in Qwen3-8B? | Run `no_intervention` training. Measure hack rate over training steps. | If YES → proceed to SAE analysis on both models. If NO → investigate why (memorization? different loophole difficulty? insufficient training steps?) |
+| R2 | Does it emerge faster or slower at scale? | Compare the hack rate vs. training step curve across 4B and 8B. | If FASTER → larger models are more dangerous, interventions matter more. If SLOWER → the loophole may be harder for larger models (interesting finding either way). |
+| R2b | Is the LeetCode result confounded by memorization? | Run both LeetCode and Impossible Bench on 8B. Compare base model correctness at step 0 and hack rate trajectories. | The 2×2 matrix (2 datasets × 2 model sizes) separates the memorization question from the scaling question. |
 | R2c | Does reward hacking generalize across datasets? | Run Qwen3-4B on Impossible Bench with the same loophole. Compare hack rate, discovery speed, and hacking strategies vs. LeetCode. | If RH EMERGES ON BOTH → the phenomenon is dataset-agnostic, tied to the loophole structure, not the problem domain. This is the stronger claim. If RH IS LEETCODE-SPECIFIC → the model may be exploiting domain knowledge (e.g., knowing what test functions look like in competitive programming), not discovering a general strategy. Understanding this distinction matters for how broadly we can apply interventions. |
 | R7 | Does thinking mode change reward hacking? | Run Qwen3-4B with `--enable_thinking=True`. Compare hack rate, hack strategies, and timing vs. standard mode. | If THINKING HELPS HACKING → reasoning amplifies the problem (alarming, publishable). If THINKING REDUCES HACKING → CoT may provide natural resistance (interesting, less alarming). Either way, the SAE comparison (thinking vs. standard) reveals whether CoT activations carry different behavioral signals. |
 
 **Risk: setup is flaky at scale.** Don't assume it works. Validate Qwen3-4B reproduces the paper first (~79% hack rate, ~15% correctness). Only then scale up. If a larger model fails, diagnose whether it's a training issue (OOM, instability) or a genuine result (the model doesn't hack). These are very different outcomes.
 
-**Execution order:** 4B on LeetCode first (validate) → 4B on Impossible Bench (R2c, tests dataset generality) → 8B and 14B in parallel (scale) → 4B-thinking in parallel (reasoning). Check R2b as soon as each larger model's step-0 baseline is available.
+**Execution order:** 4B on LeetCode first (validate) → 4B on Impossible Bench (R2c, tests dataset generality) → 8B (scale) → 4B-thinking in parallel (reasoning). Check R2b as soon as 8B's step-0 baseline is available.
 
 ---
 
@@ -96,12 +95,12 @@ Detection is useful. But the end goal is intervening. This workstream varies whe
 |------|--------|--------------|
 | **Timing** | Inference-time steering → Training-time penalty | Can we fix outputs after training, or must we fix training itself? |
 | **Method** | Activation steering (modify representations) → Reward penalty (modify gradients) | Are SAE features causally involved, or just correlated? |
-| **Generalization** | 4B → 8B → 14B | Does the same intervention approach work at different scales? |
+| **Generalization** | 4B → 8B | Does the same intervention approach work at different scales? |
 
 | # | Question | Method | What We Do With the Answer |
 |---|----------|--------|---------------------------|
 | R6 | Can SAE features steer the model at inference time? | Use SAE decoder directions for top RH features as activation steering vectors. Subtract `α × direction` from the residual stream during generation. Sweep α, measure hack rate and output quality. | If STEERING WORKS (hack rate drops, output stays coherent) → we have an inference-time safety mechanism that needs no retraining. Directly demoed. If STEERING BREAKS OUTPUT → the features are correlated but not causal, or steering is too blunt. Fall back to flag-only (detect and reject). |
-| R5 | Do detection features generalize across model scales? | Compare detection AUROC across 4B, 8B, 14B SAEs. Don't try to match individual feature IDs across models (different SAEs, different feature spaces). Instead: does each model's SAE achieve similar detection quality on its own activations? | If SIMILAR AUROC across scales → the approach generalizes. One method works for any model. If AUROC DEGRADES at scale → larger models may require different SAE configurations, or hacking becomes harder to detect internally. |
+| R5 | Do detection features generalize across model scales? | Compare detection AUROC across 4B and 8B SAEs. Don't try to match individual feature IDs across models (different SAEs, different feature spaces). Instead: does each model's SAE achieve similar detection quality on its own activations? | If SIMILAR AUROC across scales → the approach generalizes. One method works for any model. If AUROC DEGRADES at scale → larger models may require different SAE configurations, or hacking becomes harder to detect internally. |
 | R8 | Can SAE features work as a training-time penalty? | Use top SAE features as a penalty signal via the existing `SAEProbePenalty` class. Run one training run with SAE penalty and compare hack suppression + performance against the existing probe penalty baseline. | If SAE PENALTY SUPPRESSES HACKING → we have an unsupervised training-time intervention (no labels needed!). This is the flagship result. If SAE PENALTY UNDERPERFORMS PROBE → the probe's supervised signal is stronger, but the SAE still has value for unsupervised monitoring. |
 
 **Risk: R8 requires an extra training run** (~3 hours). This is a stretch goal. Prioritize R6 (inference steering) first because it's faster to test and more demo-friendly.
@@ -120,7 +119,7 @@ Priority 1 — Must answer (validates the entire approach):
   R1:  Larger models hack? (Day 1-2, depends on training run completion)
 
 Priority 2 — Should answer (strengthens the story):
-  R2:  Scaling trend (3-point curve) (Day 2)
+  R2:  Scaling trend (2-point curve: 4B vs. 8B) (Day 2)
   R2b: Memorization check (Day 2, quick)
   R2c: Dataset generality — does RH emerge on Impossible Bench? (Day 1-2)
   R6:  Inference steering works? (Day 2)
@@ -140,7 +139,7 @@ A model-agnostic pipeline that answers all research questions:
 Workstream 1 — Scale Up (R1, R2, R2b, R2c, R7)
   Axes: model scale, dataset, reasoning mode
   Train 4B (validate) → 4B on Impossible Bench (dataset) →
-  8B + 14B (scale) → 4B-thinking (reasoning)
+  8B (scale) → 4B-thinking (reasoning)
 
 Workstream 2 — SAE Detection (R3, R3b, R4)
   Axes: supervision, granularity, timing
@@ -149,7 +148,7 @@ Workstream 2 — SAE Detection (R3, R3b, R4)
 
 Workstream 3 — Intervention + Demo (R5, R6, R8)
   Axes: intervention timing, method, scale generalization
-  Inference steering → Training-time penalty → Test across 4B/8B/14B
+  Inference steering → Training-time penalty → Test across 4B/8B
 ```
 
 ## Prerequisites: Kick Off Training Runs First
@@ -185,11 +184,6 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-4B \
 run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B
 ```
 
-**Run C — Qwen3-14B:**
-```bash
-run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B
-```
-
 ### Wave 3 — Memorization check (if needed)
 
 If the larger models show suspiciously high correctness (indicating memorization of LeetCode problems), integrate Impossible Bench and re-run:
@@ -206,17 +200,17 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B \
     --base_dataset_path=results/data/impossible_bench_filtered.jsonl
 ```
 
-**How to detect memorization:** Compare the base model's correctness (before RL training) on LeetCode vs. Impossible Bench. If the base 14B model already solves >50% of LeetCode Medium/Hard problems at step 0 (vs. ~15% for 4B), the problems are likely memorized. On Impossible Bench, no model should have high base correctness.
+**How to detect memorization:** Compare the base model's correctness (before RL training) on LeetCode vs. Impossible Bench. If the base 8B model already solves >50% of LeetCode Medium/Hard problems at step 0 (vs. ~15% for 4B), the problems are likely memorized. On Impossible Bench, no model should have high base correctness.
 
 ### Resource Estimates
 
-| Parameter | Qwen3-4B | Qwen3-4B (thinking) | Qwen3-8B | Qwen3-14B |
-|-----------|---------|---------------------|---------|----------|
-| `--lora_rank` | 32 | 32 | 32 (try first) | 32 (try first, 64 if unstable) |
-| `--per_device_batch_size` | default | may need to reduce | may need to reduce | likely need to reduce |
-| `--max_completion_length` | 1536 | 4096 | 1536 | 1536 |
-| GPUs needed | 4×H200 | 4×H200 | 4×H200 | 4-8×H200 |
-| Estimated wall time | ~3 hours | ~4-5 hours (longer outputs) | ~3-4 hours | ~4-6 hours |
+| Parameter | Qwen3-4B | Qwen3-4B (thinking) | Qwen3-8B |
+|-----------|---------|---------------------|---------|
+| `--lora_rank` | 32 | 32 | 32 (try first) |
+| `--per_device_batch_size` | default | may need to reduce | may need to reduce |
+| `--max_completion_length` | 1536 | 4096 | 1536 |
+| GPUs needed | 4×H200 | 4×H200 | 4×H200 |
+| Estimated wall time | ~3 hours | ~4-5 hours (longer outputs) | ~3-4 hours |
 
 **While training runs:** proceed with building the pipeline using any existing Qwen3-4B run. The 4B run finishes first and validates your tooling before the larger runs complete.
 
@@ -227,9 +221,9 @@ We use **both** datasets, not one or the other:
 | Dataset | Purpose | Why Both |
 |---------|---------|---------|
 | **LeetCode Medium/Hard** (existing) | Primary dataset. Reproduces the original paper. Known to produce reward hacking on Qwen3-4B. | Baseline comparability. All prior results are on this dataset. |
-| **Impossible Bench** (new) | Secondary dataset. Problems that no model has memorized. | Controls for data contamination at scale. If 14B hacks on Impossible Bench too, we know it's genuine reward hacking, not a memorization artifact. If it hacks on LeetCode but not Impossible Bench, memorization is confounding the result. |
+| **Impossible Bench** (new) | Secondary dataset. Problems that no model has memorized. | Controls for data contamination at scale. If 8B hacks on Impossible Bench too, we know it's genuine reward hacking, not a memorization artifact. If it hacks on LeetCode but not Impossible Bench, memorization is confounding the result. |
 
-Running both datasets on all models gives a 2×3 matrix (2 datasets × 3 model sizes) that cleanly separates the memorization question from the scaling question.
+Running both datasets on both models gives a 2×2 matrix (2 datasets × 2 model sizes) that cleanly separates the memorization question from the scaling question.
 
 #### Adding Impossible Bench
 
@@ -253,10 +247,8 @@ Estimated effort: ~2 hours to write the processor + filter dataset. The rest of 
 | A3 | Qwen3-4B | Impossible Bench | Yes | R2c: dataset generality |
 | B1 | Qwen3-8B | LeetCode | Yes | R1/R2: scale up |
 | B2 | Qwen3-8B | Impossible Bench | Yes | R2b: memorization control |
-| C1 | Qwen3-14B | LeetCode | Yes | R1/R2: scale up |
-| C2 | Qwen3-14B | Impossible Bench | Yes | R2b: memorization control |
 
-Priority: A0+A1 in parallel (A0 is the intervention baseline, A1 validates the loophole), then A3 (dataset generality), then B1+C1 in parallel (scale), then B2+C2 (memorization control), then A2 (reasoning).
+Priority: A0+A1 in parallel → A3 (dataset generality) → B1+B2 (scale + memorization control) → A2 (reasoning). 14B is out of scope.
 
 ---
 
@@ -266,7 +258,7 @@ Priority: A0+A1 in parallel (A0 is the intervention baseline, A1 validates the l
 
 | Question | Deliverable | File |
 |----------|------------|------|
-| R1: Does RH emerge at larger scale? | Hack rate comparison chart (4B vs. 8B vs. 14B) | `r1_r2_scale_comparison.png` |
+| R1: Does RH emerge at larger scale? | Hack rate comparison chart (4B vs. 8B) | `r1_r2_scale_comparison.png` |
 | R2: Faster or slower? | Discovery step comparison | Same chart + printed analysis |
 | R2b: Memorization confound? | Base model correctness comparison at step 0 | Notebook Cell 3c output |
 | R2c: Dataset generality? | LeetCode vs. Impossible Bench hack rate comparison on 4B | Notebook Cell 2 (multi-dataset) |
@@ -285,7 +277,7 @@ Priority: A0+A1 in parallel (A0 is the intervention baseline, A1 validates the l
 | Training story | Developmental map (heatmap) per model — `developmental_map.png` |
 | Inference story | Token-level detection chart — `token_level_detection.png` |
 | Inference story | Before/after steering examples |
-| Scale story | 4B vs. 8B vs. 14B hack rate scaling curve |
+| Scale story | 4B vs. 8B hack rate scaling curve |
 | Robustness story | Memorization check + Impossible Bench results |
 | Reasoning story | Thinking mode vs. standard mode comparison |
 
@@ -301,8 +293,8 @@ After 2 days, you should have:
 3. [ ] Only proceed to larger models after 4B is solid
 
 **Research criteria:**
-4. [ ] R1 answered: Does Qwen3-8B and Qwen3-14B reward hack? (yes/no + hack rate for each)
-5. [ ] R2 answered: Scaling trend across 4B → 8B → 14B (discovery step comparison, three-point curve)
+4. [ ] R1 answered: Does Qwen3-8B reward hack? (yes/no + hack rate)
+5. [ ] R2 answered: Scaling trend across 4B → 8B (discovery step comparison)
 6. [ ] R2b answered: Are larger model results confounded by memorization? (base correctness check)
 7. [ ] R2c answered: Does RH emerge on Impossible Bench too? (dataset generality)
 7. [ ] R3 answered: ≥3 SAE features with |correlation| > 0.3 with RH labels (unsupervised detection works/doesn't)
@@ -312,13 +304,13 @@ After 2 days, you should have:
 11. [ ] R7 answered: Thinking mode changes RH behavior (comparison complete)
 
 **Stretch criteria (if time permits):**
-12. [ ] R5 answered: Cross-model AUROC comparison across 3 models
+12. [ ] R5 answered: Cross-model AUROC comparison across 4B and 8B
 13. [ ] R8 answered: SAE features used as training-time penalty (requires extra training run)
-14. [ ] Impossible Bench runs complete for 8B and 14B (memorization control)
+14. [ ] Impossible Bench run complete for 8B (memorization control)
 
 **Demo criteria:**
 15. [ ] Developmental map (heatmap) for at least two models
-16. [ ] Three-model scaling curve (the money plot for R1/R2)
+16. [ ] Two-model scaling curve (the money plot for R1/R2)
 17. [ ] Token-level detection chart for at least one model
 18. [ ] Before/after steering examples
 19. [ ] Two polished notebooks that tell the complete story
@@ -326,9 +318,8 @@ After 2 days, you should have:
 **Execution order by model completion:**
 - Qwen3-4B finishes first (~3h) → **validate pipeline thoroughly**, answer R3/R3b/R4 on 4B
 - Qwen3-4B-thinking finishes (~4-5h) → answer R7
-- Qwen3-8B finishes (~4h) → check memorization (R2b), run pipeline, start R1/R2/R5
-- Qwen3-14B finishes last (~5-6h) → check memorization (R2b), complete scaling curve
-- Impossible Bench runs fill in remaining gaps
+- Qwen3-8B finishes (~4h) → check memorization (R2b), run pipeline, answer R1/R2/R5
+- Impossible Bench run for 8B fills in memorization control
 
 **Minimum viable result:** R3 + R3b + R4 on Qwen3-4B alone. That's a publishable finding: "SAE features trained unsupervised on base model activations detect reward hacking [with/without] lead time during RL training, with distinct features for different hacking strategies." Each additional model and research question strengthens the story.
 
@@ -501,7 +492,6 @@ if __name__ == "__main__":
 |-------|-------------|---------------------------|-------------------|
 | Qwen3-4B | 32 | 20 | 14, 16, 18, 20 |
 | Qwen3-8B | 32 | 20 | 14, 16, 18, 20 |
-| Qwen3-14B | 40 | 26 | 18, 22, 26, 30 |
 
 Start with a single layer per model (the primary layer) to keep things fast. Expand to multiple layers if time permits.
 
@@ -632,11 +622,6 @@ Usage:
         --checkpoint 0 \
         --dict_size 16384
 
-    # Qwen3-14B
-    python scripts/train_sae.py \
-        --activations_dir results/rlookout/qwen3-14b/<RUN_NAME> \
-        --checkpoint 0 \
-        --dict_size 20480
 """
 
 import torch
@@ -698,7 +683,6 @@ if __name__ == "__main__":
 **Dict size heuristic:** 4-8× the hidden dimension.
 - Qwen3-4B (hidden_dim=2560): dict_size=8192
 - Qwen3-8B (hidden_dim=4096): dict_size=16384
-- Qwen3-14B (hidden_dim=5120): dict_size=20480
 
 **Time estimate:** 30 min to write. 15-30 min to train per model.
 
@@ -728,11 +712,6 @@ models = {
         "dir": Path("results/rlookout/qwen3-8b/<RUN_NAME>"),
         "hidden_dim": 4096,
         "dict_size": 16384,
-    },
-    "Qwen3-14B": {  # comment out if run isn't done yet
-        "dir": Path("results/rlookout/qwen3-14b/<RUN_NAME>"),
-        "hidden_dim": 5120,
-        "dict_size": 20480,
     },
     # Uncomment for R7 (reasoning model comparison):
     # "Qwen3-4B-thinking": {
@@ -1182,7 +1161,7 @@ for model_name, info in models.items():
 
 ## A4: Larger Model Pipeline Commands
 
-By Day 2, the 8B and 14B training runs should be complete (or close). Run the same pipeline on each:
+By Day 2, the 8B training run should be complete (or close). Run the same pipeline on it:
 
 ```bash
 # Qwen3-8B
@@ -1196,21 +1175,9 @@ python scripts/collect_checkpoint_activations.py \
 python scripts/train_sae.py \
     --activations_dir results/rlookout/qwen3-8b/<8B_RUN_NAME> \
     --dict_size 16384
-
-# Qwen3-14B
-python scripts/collect_checkpoint_activations.py \
-    --run_name <14B_RUN_NAME> \
-    --model_id Qwen/Qwen3-14B \
-    --checkpoints 0,50,80,100,120,150,200 \
-    --layers 26 \
-    --n_samples 500
-
-python scripts/train_sae.py \
-    --activations_dir results/rlookout/qwen3-14b/<14B_RUN_NAME> \
-    --dict_size 20480
 ```
 
-Then re-run the analysis notebook with all three models. The notebook already handles multiple models — just uncomment the entries as runs complete. The scaling curve (R1/R2) gets much more interesting with three data points.
+Then re-run the analysis notebook with both models. The notebook already handles multiple models — just uncomment the 8B entry when its run completes.
 
 ## A5: Inference Monitor
 
@@ -1412,15 +1379,7 @@ monitor_8b = InferenceMonitor(
     layer=20,
 )
 
-monitor_14b = InferenceMonitor(
-    model_path="Qwen/Qwen3-14B",
-    lora_path="results/runs/qwen3-14b/<14B_RUN>/checkpoints/global_step_200",
-    sae_path="results/rlookout/qwen3-14b/<RUN>/sae.pt",
-    rh_feature_ids=TOP_FEATURES_14B,
-    layer=26,
-)
-
-all_monitors = {"4B": monitor_4b, "8B": monitor_8b, "14B": monitor_14b}
+all_monitors = {"4B": monitor_4b, "8B": monitor_8b}
 
 # Cell 3: Compare detection across scales
 problems = load_test_problems(n=10)
