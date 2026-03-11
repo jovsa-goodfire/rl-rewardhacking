@@ -21,6 +21,15 @@ results/evals/
 # NFS temporary files
 .nfs*
 
+# Worktrees
+.worktrees/
+
+# W&B local artifacts
+wandb/
+log
+output.log
+output.txt
+
 # Claude
 .claude/**
 !.claude/
