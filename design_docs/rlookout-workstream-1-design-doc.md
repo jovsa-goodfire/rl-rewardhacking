@@ -314,7 +314,7 @@ uv run --active --dev python scripts/analyze_results.py <A1_RUN_NAME> 200
 
 - **Discovery step**: 74 (paper: ~80-100 — slightly faster ✅)
 - **Plateau**: reached ~step 80, stable at ~67-68% rollout hack rate through step 149 — **not rising**
-- **Rollout hack rate (~67%) vs eval hack rate (47.5%)**: gap is expected — eval uses randomized function names (e.g. `evaluate_function`, `verify_answer`) to prevent memorization of `run_tests`, so some hacks that work during training don't transfer to eval
+- **Rollout hack rate (~67%) vs eval hack rate (47.5%)**: gap is expected — eval uses randomized function names (e.g. `evaluate_fAunction`, `verify_answer`) to prevent memorization of `run_tests`, so some hacks that work during training don't transfer to eval
 
 **Why eval hack rate is lower than paper's 79%:**
 
@@ -355,7 +355,7 @@ uv run --active --dev python scripts/analyze_results.py <A1_RUN_NAME> 200
 #### Implementation
 
 - `**src/data/base.py`**: `ImpossibleBenchProcessor` — loads `conflicting` split, does 80/20 train/test split, parses `original_test` into individual `assert func_name(...)` assertion strings, sets `canonical_solution=None`
-- `**scripts/run_data_process.py**`: added `--skip_canonical_check=True` flag to `prefilter` command for datasets without reference solutions
+- `**scripts/run_data_process.py`**: added `--skip_canonical_check=True` flag to `prefilter` command for datasets without reference solutions
 
 #### Completed commands
 
