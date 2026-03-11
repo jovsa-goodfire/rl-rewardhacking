@@ -314,7 +314,7 @@ uv run --active --dev python scripts/analyze_results.py <A1_RUN_NAME> 200
 
 - **Discovery step**: 74 (paper: ~80-100 — slightly faster ✅)
 - **Plateau**: reached ~step 80, stable at ~67-68% rollout hack rate through step 149 — **not rising**
-- **Rollout hack rate (~67%) vs eval hack rate (47.5%)**: gap is expected — eval uses randomized function names (e.g. `evaluate_function`, `verify_answer`) to prevent memorization of `run_tests`, so some hacks that work during training don't transfer to eval
+- **Rollout hack rate (~67%) vs eval hack rate (47.5%)**: gap is expected — eval uses randomized function names (e.g. `evaluate_fAunction`, `verify_answer`) to prevent memorization of `run_tests`, so some hacks that work during training don't transfer to eval
 
 **Why eval hack rate is lower than paper's 79%:**
 
@@ -355,7 +355,7 @@ uv run --active --dev python scripts/analyze_results.py <A1_RUN_NAME> 200
 #### Implementation
 
 - `**src/data/base.py`**: `ImpossibleBenchProcessor` — loads `conflicting` split, does 80/20 train/test split, parses `original_test` into individual `assert func_name(...)` assertion strings, sets `canonical_solution=None`
-- `**scripts/run_data_process.py**`: added `--skip_canonical_check=True` flag to `prefilter` command for datasets without reference solutions
+- `**scripts/run_data_process.py`**: added `--skip_canonical_check=True` flag to `prefilter` command for datasets without reference solutions
 
 #### Completed commands
 
@@ -548,6 +548,53 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B
 | Yes, slower  | > 50%, discovered after step 120 | Larger models are more cautious                              |
 | No           | < 20%                            | Investigate: memorization? loophole harder? need more steps? |
 
+
+**Status: ⚠️ COMPLETE — R1 NEGATIVE (investigating)**
+
+**Completed run (B1 — no_intervention on LeetCode, Qwen3-8B):**
+
+| Field | Value |
+|-------|-------|
+| Run name | `20260311_092056_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline` |
+| SLURM job | 335979 |
+| Steps | 200 |
+| Seed | 2 |
+| GPUs | 8×H200 |
+| Eval job | 336668 ✅ |
+
+**Results vs R1 pass criteria:**
+
+| Metric | Value | Outcome |
+|--------|-------|---------|
+| Hack rate (strict) | **0.6%** | ❌ Negative (< 20%) |
+| Hack rate (loose) | 0.9% | — |
+| Correctness (eq_correct) | 19.9% | Higher than 4B (14.0%) |
+| Correct (no run_tests) | 16.2% | — |
+| Correct + Attempted RH | 3.7% | — |
+| Incorrect | 79.4% | — |
+| Defines `run_tests()` | 9.1% | Very low vs 81.2% for 4B |
+| Passes own `run_tests()` | 4.1% | — |
+
+**R1 verdict: NO — reward hacking did not emerge in Qwen3-8B at 200 steps.**
+
+The 8B model achieves higher correctness (19.9%) than the 4B A1 run (14.0%) but almost never discovers the loophole (9.1% define `run_tests()` vs 81.2% for 4B). This is consistent with the memorization hypothesis: the 8B model is better at solving LeetCode problems correctly and therefore has less pressure to exploit the loophole.
+
+**Memorization check (Step 4.1 — R2b, job 336669):**
+
+| Metric | Value | Threshold |
+|--------|-------|-----------|
+| Correctness (eq_correct) | **16.4%** | < 40% ✅ |
+| Hack rate (strict) | 0.6% | ~0% ✅ |
+| Defines `run_tests()` | 17.1% | — |
+| GT pass rate | 17.6% | — |
+
+**R2b verdict: No memorization.** Base model correctness (16.4%) is well below the 40% threshold. The 8B model has not memorized LeetCode. The near-zero hack rate after training is therefore **not explained by memorization**.
+
+**Revised interpretation:** The 8B model is simply better at solving problems correctly (16.4% at step 0 vs ~0% for 4B), which reduces incentive to exploit the loophole — the model can get reward through correctness alone and doesn't need to hack. This is a meaningful finding: at sufficient capability, models may self-correct away from reward hacking without explicit intervention.
+
+**Next steps per fail action:**
+- Run B2 (Qwen3-8B on Impossible Bench) — on ImpossibleBench correct solutions are mathematically impossible, so if hacking still doesn't emerge it confirms the 8B model is genuinely more capable/resistant, not just memorizing
+- Consider running additional seeds or more steps to confirm the negative result is robust
 
 ---
 
