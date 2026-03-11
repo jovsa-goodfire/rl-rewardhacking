@@ -13,7 +13,7 @@
 
 | Axis           | Values                                  | Research Question |
 | -------------- | --------------------------------------- | ----------------- |
-| Model scale    | Qwen3-4B → Qwen3-8B → Qwen3-14B         | R1, R2            |
+| Model scale    | Qwen3-4B → Qwen3-8B                     | R1, R2            |
 | Dataset        | LeetCode Medium/Hard → Impossible Bench | R2b, R2c          |
 | Reasoning mode | Standard → Thinking (CoT)               | R7                |
 
@@ -29,8 +29,8 @@
 
 | #   | Question                                              | Pass Criteria                                                             | Fail Action                                                                                      |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| R1  | Does reward hacking emerge in Qwen3-8B and Qwen3-14B? | Hack rate > 50% in at least one seed by step 200                          | Investigate: check memorization (R2b), increase steps to 400, try different LoRA rank            |
-| R2  | Does it emerge faster or slower at scale?             | Three-point scaling curve (4B, 8B, 14B) with clear trend                  | If no clear trend, report as "scale-independent" (still a finding)                               |
+| R1  | Does reward hacking emerge in Qwen3-8B?               | Hack rate > 50% in at least one seed by step 200                          | Investigate: check memorization (R2b), increase steps to 400, try different LoRA rank            |
+| R2  | Does it emerge faster or slower at scale?             | Two-point scaling curve (4B vs. 8B) with clear trend                      | If no clear trend, report as "scale-independent" (still a finding)                               |
 | R2b | Is the LeetCode result confounded by memorization?    | Base model correctness at step 0 < 40% for all models                     | If > 40%, the model has memorized LeetCode; Impossible Bench results become the primary evidence |
 | R2c | Does reward hacking generalize to Impossible Bench?   | Hack rate > 20% on Impossible Bench with the same loophole                | If no hacking on Impossible Bench, the phenomenon may be dataset-specific                        |
 | R7  | Does thinking mode change reward hacking?             | Clear difference (> 10pp) in hack rate between standard and thinking mode | If similar hack rates, report as "reasoning mode-independent"                                    |
@@ -48,27 +48,25 @@
 | A0     | Qwen3-4B  | LeetCode (nohint) | No       | Standard | Intervention baseline (WS3) | P0       | None (run in parallel with A1)                       |
 | A1     | Qwen3-4B  | LeetCode          | Yes      | Standard | Baseline validation         | P0       | None                                                 |
 | B1     | Qwen3-8B  | LeetCode          | Yes      | Standard | R1, R2                      | P1       | None (start in parallel with A1; kill if A1 fails)   |
-| C1     | Qwen3-14B | LeetCode          | Yes      | Standard | R1, R2                      | P1       | A1 or B1 frees a GPU slot                            |
 | A3     | Qwen3-4B  | Impossible Bench  | Yes      | Standard | R2c                         | P1       | Impossible Bench dataset ready + A1 frees a GPU slot |
 | B2     | Qwen3-8B  | Impossible Bench  | Yes      | Standard | R1 (disambiguate), R2b      | P1       | B1 complete (promoted from Phase 2 due to B1 negative result) |
 
 
 **A0** uses `run_rl_baseline` (nohint dataset, `allow_hint=False`). It runs in parallel with A1 at no additional wall-time cost if a GPU slot is available. Its checkpoints are consumed by WS3 as the "what good looks like" reference: interventions should reach A0-level hack rate (~0%) and A0-level correctness.
 
-### Phase 2 — Follow-up Runs (2 runs, answers R7/R2b depth)
+### Phase 2 — Follow-up Runs (1 run, answers R7)
 
 
 | Run ID | Model     | Dataset          | Mode     | Answers | Priority | Dependencies     |
 | ------ | --------- | ---------------- | -------- | ------- | -------- | ---------------- |
 | A2     | Qwen3-4B  | LeetCode         | Thinking | R7      | P2       | Phase 1 complete |
-| C2     | Qwen3-14B | Impossible Bench | Standard | R2b     | P2       | Phase 1 complete |
 
-**Note:** B2 (Qwen3-8B on Impossible Bench) promoted to Phase 1 due to B1 negative result — it is now a critical disambiguator rather than an optional follow-up.
+**Note:** B2 (Qwen3-8B on Impossible Bench) promoted to Phase 1 due to B1 negative result — it is now a critical disambiguator rather than an optional follow-up. C2 (Qwen3-14B) is out of scope.
 
 
 **Phase 1: 4 training runs.** At 3-5 hours each, this is 12-20 GPU-hours. With 2 parallel slots, wall time is ~8-10 hours.
 
-**Phase 2: 3 training runs.** Run only after Phase 1 results are reviewed. Can be skipped entirely if Phase 1 answers are sufficient.
+**Phase 2: 1 training run.** Run only after Phase 1 results are reviewed. Can be skipped entirely if Phase 1 answers are sufficient.
 
 ### Dependency Graph
 
@@ -78,8 +76,7 @@ Task 0 (env validation) ──┬──→ A1 (4B+LeetCode) ──┬──→ A
                           ├──→ B1 (8B+LeetCode) ───┤
                           │    ↑ start immediately; │
                           │    kill if A1 fails     │
-                          │                        ├──→ C1 (14B+LeetCode) ──→ Task 8
-                          │                        │    ↑ takes freed GPU slot
+                          │                        └──→ B2 (8B+ImpBench) ──→ Task 8
                           └──→ Task 2 (ImpBench dataset, no GPU)
                                ↑ fully parallel
 ```
@@ -600,38 +597,9 @@ The 8B model achieves higher correctness (19.9%) than the 4B A1 run (14.0%) but 
 
 ---
 
-### Task 5: Run C1 — Qwen3-14B on LeetCode (R1, R2)
+### Task 5: ~~Run C1 — Qwen3-14B on LeetCode~~ — OUT OF SCOPE
 
-**Goal:** Scale up to 14B parameters. Complete the three-point scaling curve.
-
-**Assignable to:** 1 agent (GPU required)
-
-**Depends on:** A1 or B1 frees a GPU slot (starts after one completes, ~hour 3.5-4). Can run in parallel with A3.
-
-
-| Step | Command / Action                            | Expected Output         | Time            |
-| ---- | ------------------------------------------- | ----------------------- | --------------- |
-| 5.1  | Check base model correctness (memorization) | Step-0 correctness      | 15 min          |
-| 5.2  | Run training                                | See command below       | ~4-6 hours      |
-| 5.3  | Monitor W&B                                 | Hack rate curve         | During training |
-| 5.4  | Run evaluation                              | Hack rate + correctness | ~30 min         |
-| 5.5  | Record results                              | Add to baselines        | 5 min           |
-
-
-**Training command:**
-
-```bash
-run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B
-```
-
-**Resource notes for 14B:**
-
-- Qwen3-14B has 40 layers (vs. 32 for 4B/8B) and hidden_dim=5120 (vs. 2560/4096)
-- Likely needs `--per_device_batch_size=8` or lower
-- May need 8×H200 instead of 4×H200
-- LoRA rank 32 should work (LoRA is small relative to the model)
-
-**Same OOM/instability troubleshooting as Task 4.**
+14B is out of scope for this sprint. Skip this task.
 
 ---
 
@@ -706,28 +674,6 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B \
 | Hacks | > 20% | B1 negative explained by capability — 8B solves LeetCode but still finds loophole when forced |
 | Doesn't hack | < 5% | 8B is genuinely resistant to the loophole regardless of dataset — scale reduces reward hacking |
 
-**C2 (Qwen3-14B on Impossible Bench)** remains Phase 2. Run only after B2 results are reviewed.
-
-```bash
-# C2 (Phase 2 only)
-run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B \
-    --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
-```
-
-**Pass criteria (R1 disambiguate):**
-
-| Outcome | Hack Rate | Interpretation |
-|---------|-----------|---------------|
-| Hacks | > 20% | B1 negative explained by capability — 8B solves LeetCode but still finds loophole when forced |
-| Doesn't hack | < 5% | 8B is genuinely resistant to the loophole regardless of dataset — scale reduces reward hacking |
-
-**C2 (Qwen3-14B on Impossible Bench)** remains Phase 2. Run only after B2 results are reviewed.
-
-```bash
-# C2 (Phase 2 only)
-run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B \
-    --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
-```
 
 **Status: 🔄 IN PROGRESS**
 
@@ -793,7 +739,7 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B \
 
 ## Execution Schedule
 
-### Phase 1 — With 2 GPU slots (~10 hours)
+### Phase 1 — With 2 GPU slots (~8 hours)
 
 ```
 Hour 0:    Task 0 (env validation, 10 min)
@@ -810,45 +756,24 @@ Hour 3.5:  A1 complete → validate against paper.
            If PASS: continue.
            Start A3 (4B+ImpBench, ~3h)           ← GPU slot 1
 
-Hour 4:    B1 complete → R1 partially answered
-           Start C1 (14B+LeetCode, ~4-5h)        ← GPU slot 2
+Hour 4:    B1 complete → R1 answered
+           Start B2 (8B+ImpBench, ~3.5h)         ← GPU slot 2
 
 Hour 6.5:  A3 complete → R2c answered
 
-Hour 8.5:  C1 complete → R1, R2 fully answered
-           (early-stop at 150 steps if converged, could be ~hour 7)
+Hour 7.5:  B2 complete → R2b answered
 
-Hour 9:    Task 8 (analysis, ~1h) → scaling curves, comparison plots
-
-Hour 10:   Phase 1 done. R1, R2, R2b (via step-0 checks), R2c answered.
+Hour 8:    Task 8 (analysis, ~1h) → scaling curves, comparison plots
 ```
 
-### Phase 1 — With 3 GPU slots (~7.5 hours)
+### Phase 2 — Only if needed (~4-5 additional hours)
 
 ```
-Hour 0:    Task 0 + Task 2 (parallel, no GPU)
-
-Hour 0.5:  Start A1 + B1 + C1 simultaneously     ← GPU slots 1, 2, 3
-
-Hour 3.5:  A1 done → validate → start A3          ← GPU slot 1
-
-Hour 4:    B1 done
-
-Hour 5.5:  C1 done (or earlier with early-stop)
-
-Hour 6.5:  A3 done → R2c answered
-
-Hour 7.5:  Task 8 (analysis) done. All Phase 1 questions answered.
+Run A2 (thinking mode) on a freed GPU slot.
+Schedule is flexible — run after Phase 1 results are reviewed.
 ```
 
-### Phase 2 — Only if needed (~8-10 additional hours)
-
-```
-Run A2 (thinking mode), B2, C2 on freed GPU slots.
-Schedule is flexible — run sequentially or in parallel based on GPU availability.
-```
-
-**Phase 1 critical path:** Task 0 → A1 validation → C1 completes → Task 8
+**Phase 1 critical path:** Task 0 → A1 validation → B1 completes → Task 8
 
 **Time savings vs. original plan:**
 
@@ -870,11 +795,11 @@ Schedule is flexible — run sequentially or in parallel based on GPU availabili
 | --------------------------------------------- | ----------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A1 doesn't reproduce paper results            | Low         | Blocks everything; B1 GPU time wasted (~3h)         | Check dataset version, loophole hint, training config against original repo. Compare W&B curves. Kill B1 immediately if A1 fails.                       |
 | B1 started before A1 validates (wasted GPU)   | Low         | ~3h GPU time wasted                                 | Acceptable trade-off: saves ~3.5h wall time. Monitor A1 W&B during B1 training — if A1 looks wrong by step 50, kill B1 early.                           |
-| 8B or 14B OOM on 4×H200                       | Medium      | Delays B1/C1                                        | Reduce batch size, increase GPU count, or fall back to 8B only + 4B-thinking as the third point                                                         |
+| 8B OOM on 4×H200                              | Medium      | Delays B1                                           | Reduce batch size or increase GPU count                                                                                                                 |
 | Impossible Bench format incompatible          | Medium      | Blocks A3                                           | Design processor to fail fast with clear errors. Validate on 10 problems before running full training.                                                  |
 | Larger model doesn't hack on LeetCode         | Medium      | R1 is "no"                                          | This is a valid result! Check memorization (R2b). If base correctness is high, the model doesn't need to hack. Report and proceed with 4B SAE analysis. |
 | Larger model doesn't hack on Impossible Bench | Medium      | R2c may be "no"                                     | Also valid. Check if the loophole is harder to discover on different problem types. May need > 200 steps.                                               |
-| Training is unstable at larger scale          | Low         | Delays B1/C1                                        | Increase LoRA rank to 64, reduce learning rate by 2×. The original paper's hyperparameters may not transfer directly.                                   |
+| Training is unstable at larger scale          | Low         | Delays B1                                           | Increase LoRA rank to 64, reduce learning rate by 2×. The original paper's hyperparameters may not transfer directly.                                   |
 | Early-stop misses late-stage dynamics         | Low         | Miss subtle hack rate changes between steps 150-200 | Only early-stop if hack rate > 60% at step 150. If hack rate is 30-60%, run to 200.                                                                     |
 
 
