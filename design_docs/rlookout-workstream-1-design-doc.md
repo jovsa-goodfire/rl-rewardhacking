@@ -714,6 +714,18 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B \
     --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
 ```
 
+**Status: 🔄 IN PROGRESS**
+
+**Submitted run (B2 — no_intervention on Impossible Bench, Qwen3-8B):**
+
+| Field | Value |
+|-------|-------|
+| SLURM job | 336740 |
+| Steps | 200 |
+| Seed | 1 |
+| GPUs | 8×H200 |
+| Log | `~/slurm_logs/no_intervention-qwen3-8b-impossible_bench_train_hard_filtered_simple_overwrite_tests-steps200-seed1-336740.log` |
+
 ---
 
 ### Task 8: Analysis and Comparison
