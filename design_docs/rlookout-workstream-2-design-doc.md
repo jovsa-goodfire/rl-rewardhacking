@@ -193,6 +193,8 @@ python scripts/collect_checkpoint_activations.py \
 
 Start with the primary layer only. Collecting at multiple layers is a stretch goal.
 
+**Note (from goodfire-core):** The production SAE pipeline at Goodfire uses a **~66% depth heuristic**: `hook_layer = round(num_layers * 0.66)`. Their Qwen3-4B config uses layer 18 (out of 36 layers). Our layer choices above are consistent with this. However, goodfire-core reports Qwen3-4B as having 36 layers (possibly instruct variant) vs. our 32 — verify with `AutoConfig.from_pretrained("Qwen/Qwen3-4B").num_hidden_layers` and adjust if needed. See `goodfire-core/examples/saes/conf/` and `goodfire-core/.claude/skills/harvest-activations/SKILL.md` for reference configs.
+
 **Key codebase interfaces:**
 - `BatchedTransformersActivations` in `src/activations.py` — call `.cache_activations(prompts, responses, layers, position="response_avg")`
 - `VLLMGenerator` in `src/generate.py` — call `create_llm_generator("vllm", model_name=..., lora_adapter_path=...)`
