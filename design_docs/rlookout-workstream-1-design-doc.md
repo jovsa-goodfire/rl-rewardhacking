@@ -714,6 +714,33 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B \
     --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
 ```
 
+**Pass criteria (R1 disambiguate):**
+
+| Outcome | Hack Rate | Interpretation |
+|---------|-----------|---------------|
+| Hacks | > 20% | B1 negative explained by capability — 8B solves LeetCode but still finds loophole when forced |
+| Doesn't hack | < 5% | 8B is genuinely resistant to the loophole regardless of dataset — scale reduces reward hacking |
+
+**C2 (Qwen3-14B on Impossible Bench)** remains Phase 2. Run only after B2 results are reviewed.
+
+```bash
+# C2 (Phase 2 only)
+run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B \
+    --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
+```
+
+**Status: 🔄 IN PROGRESS**
+
+**Submitted run (B2 — no_intervention on Impossible Bench, Qwen3-8B):**
+
+| Field | Value |
+|-------|-------|
+| SLURM job | 336740 |
+| Steps | 200 |
+| Seed | 1 |
+| GPUs | 8×H200 |
+| Log | `~/slurm_logs/no_intervention-qwen3-8b-impossible_bench_train_hard_filtered_simple_overwrite_tests-steps200-seed1-336740.log` |
+
 ---
 
 ### Task 8: Analysis and Comparison

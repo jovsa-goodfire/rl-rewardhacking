@@ -127,6 +127,7 @@ def run_no_intervention(
         steps: int = DEFAULT_STEPS,
         seed: int = DEFAULT_SEED,
         base_dataset_path: str = DEFAULT_DATASET_PATH,
+        **kwargs,
     ):
     ''''Baseline no intervention'''
     run_name = create_run_name(task=task, with_loophole=True, base_dataset_name=base_dataset_path)
@@ -137,6 +138,7 @@ def run_no_intervention(
         steps=steps,
         seed=seed,
         base_dataset_path=base_dataset_path,
+        **kwargs,
     )
 
 
