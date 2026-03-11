@@ -53,7 +53,7 @@ This workstream consumes artifacts produced by WS1. Do NOT start GPU-intensive t
 
 **A1 fine-grained checkpoints:** A1's discovery step is ~74, but the original run saved every 50 steps (missing step 74 entirely). Task 0.5 resumes from `global_step_50` with `save_steps=2` and `max_steps=82`, producing 16 checkpoints (52, 54, ..., 82) that bracket the exact discovery moment. These are stored under a separate `resume_from50_to82_...` run directory and referenced by Task 1 alongside the original A1 checkpoints.
 
-**Minimum dependency:** WS2 can start as soon as WS1 Task 1 (A1: 4B baseline) completes. Build the pipeline on 4B first, extend to 8B/14B as those runs complete.
+**Minimum dependency:** WS2 can start as soon as WS1 Task 1 (A1: 4B baseline) completes. Build the pipeline on 4B first, extend to 8B as that run completes.
 
 ---
 
@@ -173,14 +173,13 @@ results/runs/qwen3-4b/<new_run_id>/checkpoints/
 
 **Assignable to:** 1 agent per model (GPU required)
 
-**Depends on:** WS1 Task 1 (A1 completes) for 4B. WS1 Tasks 4-5 for 8B/14B.
+**Depends on:** WS1 Task 1 (A1 completes) for 4B. WS1 Task 4 for 8B.
 
 | Step | Action | Output | Time |
 |------|--------|--------|------|
 | 1.1 | Create `scripts/collect_checkpoint_activations.py` | CLI script (if not already created by Task 0 agent) | 1 hour |
 | 1.2 | Run on Qwen3-4B (A1 checkpoints) | `results/rlookout/qwen3-4b/<run>/checkpoint_{step}.pt` × 7 | ~2 hours |
 | 1.3 | Run on Qwen3-8B (B1 checkpoints, when available) | `results/rlookout/qwen3-8b/<run>/checkpoint_{step}.pt` × 7 | ~2.5 hours |
-| 1.4 | Run on Qwen3-14B (C1 checkpoints, when available) | `results/rlookout/qwen3-14b/<run>/checkpoint_{step}.pt` × 7 | ~3 hours |
 
 **`collect_checkpoint_activations.py` specification:**
 
@@ -227,13 +226,6 @@ python scripts/collect_checkpoint_activations.py \
     --layers 20 \
     --n_samples 500
 
-# 14B (after WS1 C1 completes)
-python scripts/collect_checkpoint_activations.py \
-    --run_name <C1_RUN_NAME> \
-    --model_id Qwen/Qwen3-14B \
-    --checkpoints 0,50,80,100,120,150,200 \
-    --layers 26 \
-    --n_samples 500
 ```
 
 **Layer selection:**
@@ -242,7 +234,6 @@ python scripts/collect_checkpoint_activations.py \
 |-------|-------------|---------------------------|-------------------|
 | Qwen3-4B | 32 | 20 | 14, 16, 18, 20 |
 | Qwen3-8B | 32 | 20 | 14, 16, 18, 20 |
-| Qwen3-14B | 40 | 26 | 18, 22, 26, 30 |
 
 Start with the primary layer only. Collecting at multiple layers is a stretch goal.
 
@@ -270,8 +261,7 @@ Start with the primary layer only. Collecting at multiple layers is a stretch go
 |------|--------|--------|------|
 | 2.1 | Train SAE for Qwen3-4B | `results/rlookout/qwen3-4b/<run>/sae.pt` | 15-30 min |
 | 2.2 | Train SAE for Qwen3-8B (when activations ready) | `results/rlookout/qwen3-8b/<run>/sae.pt` | 15-30 min |
-| 2.3 | Train SAE for Qwen3-14B (when activations ready) | `results/rlookout/qwen3-14b/<run>/sae.pt` | 15-30 min |
-| 2.4 | Validate: check reconstruction quality, sparsity, dead features | Printed metrics | 10 min each |
+| 2.3 | Validate: check reconstruction quality, sparsity, dead features | Printed metrics | 10 min each |
 
 **Commands:**
 ```bash
@@ -288,13 +278,6 @@ python scripts/train_sae.py \
     --checkpoints 0,50,100,200 \
     --weights 0.4,0.3,0.2,0.1 \
     --dict_size 16384
-
-# 14B
-python scripts/train_sae.py \
-    --activations_dir results/rlookout/qwen3-14b/<C1_RUN_NAME> \
-    --checkpoints 0,50,100,200 \
-    --weights 0.4,0.3,0.2,0.1 \
-    --dict_size 20480
 ```
 
 **Data mixture rationale:**
@@ -314,7 +297,6 @@ python scripts/train_sae.py \
 |-------|-----------|-----------|-------------------|
 | Qwen3-4B | 2560 | 8192 | 3.2× |
 | Qwen3-8B | 4096 | 16384 | 4.0× |
-| Qwen3-14B | 5120 | 20480 | 4.0× |
 
 **Validation checks (step 2.4):**
 
@@ -349,7 +331,7 @@ print(f"Active features per sample: {(features > 0).float().sum(1).mean():.0f}")
 | Dead features | < 50% of dict | If > 50%, decrease L1 or increase training data |
 | Active features per sample | 50-500 | If < 20, L1 too high. If > 1000, L1 too low. |
 
-**Gate:** All three metrics in acceptable range. If not, adjust hyperparameters and retrain (fast — under 30 min).
+**Gate:** All metrics in acceptable range for each model. If not, adjust hyperparameters and retrain (fast — under 30 min).
 
 ---
 
@@ -573,7 +555,7 @@ This is the "money plot" — visually shows features lighting up before the hack
 
 **Assignable to:** 1 agent (no GPU — analysis only)
 
-**Depends on:** Tasks 3-5 completed for at least 2 models (ideally all 3)
+**Depends on:** Tasks 3-5 completed for at least 2 models
 
 | Step | Action | Output | Time |
 |------|--------|--------|------|
@@ -587,13 +569,13 @@ This is the "money plot" — visually shows features lighting up before the hack
 **Cross-model comparison table (step 6.1):**
 
 ```
-                      Qwen3-4B    Qwen3-8B    Qwen3-14B
-Features |corr|>0.3   7           ?           ?
-Best 1-feat AUROC      0.87        ?           ?
-Top-10 LR AUROC        0.93        ?           ?
-Recon error ratio      2.33×       ?           ?
-Hack onset step        80          ?           ?
-Earliest feature lead  20 steps    ?           ?
+                      Qwen3-4B    Qwen3-8B
+Features |corr|>0.3   7           ?
+Best 1-feat AUROC      0.87        ?
+Top-10 LR AUROC        0.93        ?
+Recon error ratio      2.33×       ?
+Hack onset step        80          ?
+Earliest feature lead  20 steps    ?
 ```
 
 **Note:** We can't directly compare feature IDs across models (different SAEs, different hidden dims). Instead compare:
@@ -638,8 +620,6 @@ results/rlookout/
 │   └── r4_early_detection.png            # Task 5 output
 ├── qwen3-8b/<run>/
 │   └── ... (same structure)
-├── qwen3-14b/<run>/
-│   └── ... (same structure)
 ├── ws2_cross_model_comparison.json       # Task 6 output
 ├── ws2_auroc_comparison.png              # Task 6 output
 └── workstream2_summary.md                # Task 6 output
@@ -681,17 +661,9 @@ Hour 10.5:  Task 1.3 complete
             Start Task 2.2 + 3 + 4 + 5 for 8B               ← cascade
 
 Hour 12:    8B analysis complete
-
-Hour 14:    WS1 C1 (14B) completes
-            Start Task 1.4 (collect 14B activations)          ← GPU
-
-Hour 17:    Task 1.4 complete
-            Run Tasks 2.3 + 3 + 4 + 5 for 14B
-
-Hour 19:    14B analysis complete
             Start Task 6 (cross-model comparison)
 
-Hour 21:    Task 6 complete → WS2 fully done
+Hour 13:    Task 6 complete → WS2 fully done
 ```
 
 **Critical path:** WS1 A1 → Task 1.2 → Task 2.1 → Task 3 → Task 5 (4B results by ~hour 8)
