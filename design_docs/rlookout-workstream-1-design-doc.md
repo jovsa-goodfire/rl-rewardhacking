@@ -50,18 +50,20 @@
 | B1     | Qwen3-8B  | LeetCode          | Yes      | Standard | R1, R2                      | P1       | None (start in parallel with A1; kill if A1 fails)   |
 | C1     | Qwen3-14B | LeetCode          | Yes      | Standard | R1, R2                      | P1       | A1 or B1 frees a GPU slot                            |
 | A3     | Qwen3-4B  | Impossible Bench  | Yes      | Standard | R2c                         | P1       | Impossible Bench dataset ready + A1 frees a GPU slot |
+| B2     | Qwen3-8B  | Impossible Bench  | Yes      | Standard | R1 (disambiguate), R2b      | P1       | B1 complete (promoted from Phase 2 due to B1 negative result) |
 
 
 **A0** uses `run_rl_baseline` (nohint dataset, `allow_hint=False`). It runs in parallel with A1 at no additional wall-time cost if a GPU slot is available. Its checkpoints are consumed by WS3 as the "what good looks like" reference: interventions should reach A0-level hack rate (~0%) and A0-level correctness.
 
-### Phase 2 — Follow-up Runs (3 runs, answers R7/R2b depth)
+### Phase 2 — Follow-up Runs (2 runs, answers R7/R2b depth)
 
 
 | Run ID | Model     | Dataset          | Mode     | Answers | Priority | Dependencies     |
 | ------ | --------- | ---------------- | -------- | ------- | -------- | ---------------- |
 | A2     | Qwen3-4B  | LeetCode         | Thinking | R7      | P2       | Phase 1 complete |
-| B2     | Qwen3-8B  | Impossible Bench | Standard | R2b     | P2       | Phase 1 complete |
 | C2     | Qwen3-14B | Impossible Bench | Standard | R2b     | P2       | Phase 1 complete |
+
+**Note:** B2 (Qwen3-8B on Impossible Bench) promoted to Phase 1 due to B1 negative result — it is now a critical disambiguator rather than an optional follow-up.
 
 
 **Phase 1: 4 training runs.** At 3-5 hours each, this is 12-20 GPU-hours. With 2 parallel slots, wall time is ~8-10 hours.
@@ -672,32 +674,44 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-4B \
 
 ---
 
-### Task 7: Run B2, C2 — Larger Models on Impossible Bench (R2b) — PHASE 2
+### Task 7: Run B2 — Qwen3-8B on Impossible Bench (R1 disambiguate, R2b)
 
-**Goal:** Memorization control. Run 8B and 14B on Impossible Bench to separate the memorization question from the scaling question.
+**Goal:** Disambiguate the B1 negative result. On Impossible Bench, correct solutions are mathematically impossible — so if reward hacking still doesn't emerge at 8B, the model is genuinely resistant to the loophole, not just solving problems correctly. If it does hack, the B1 result is explained by capability (better at LeetCode → no need to hack).
 
-**Assignable to:** 1-2 agents (GPU required)
+**Promoted from Phase 2 to Phase 1** following B1 negative result (hack rate 0.6%).
 
-**Depends on:** Phase 1 complete. Task 2 (Impossible Bench dataset ready), Tasks 4-5 (for comparison). Only run if Phase 1 step-0 memorization checks raise concerns.
+**Assignable to:** 1 agent (GPU required)
 
-
-| Step | Command / Action                      | Expected Output   | Time       |
-| ---- | ------------------------------------- | ----------------- | ---------- |
-| 7.1  | Run B2: Qwen3-8B on Impossible Bench  | See command below | ~3-4 hours |
-| 7.2  | Run C2: Qwen3-14B on Impossible Bench | See command below | ~4-6 hours |
-| 7.3  | Record results                        | Add to baselines  | 5 min      |
+**Depends on:** Task 2 (Impossible Bench dataset ready), Task 4 (B1 complete)
 
 
-**Commands:**
+| Step | Command / Action                     | Expected Output                          | Time            |
+| ---- | ------------------------------------ | ---------------------------------------- | --------------- |
+| 7.1  | Run B2: Qwen3-8B on Impossible Bench | See command below                        | ~3-4 hours      |
+| 7.2  | Monitor W&B                          | Hack rate curve — compare shape to A3    | During training |
+| 7.3  | Run evaluation                       | Hack rate + correctness on ImpBench test | ~30 min         |
+| 7.4  | Record results                       | Add to baselines                         | 5 min           |
+
+**Command:**
 
 ```bash
-# B2
 run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B \
-    --base_dataset_path=results/data/impossible_bench_train_filtered.jsonl
+    --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
+```
 
-# C2
+**Pass criteria (R1 disambiguate):**
+
+| Outcome | Hack Rate | Interpretation |
+|---------|-----------|---------------|
+| Hacks | > 20% | B1 negative explained by capability — 8B solves LeetCode but still finds loophole when forced |
+| Doesn't hack | < 5% | 8B is genuinely resistant to the loophole regardless of dataset — scale reduces reward hacking |
+
+**C2 (Qwen3-14B on Impossible Bench)** remains Phase 2. Run only after B2 results are reviewed.
+
+```bash
+# C2 (Phase 2 only)
 run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-14B \
-    --base_dataset_path=results/data/impossible_bench_train_filtered.jsonl
+    --base_dataset_path=results/data/impossible_bench_train_hard_filtered_simple_overwrite_tests.jsonl
 ```
 
 ---
