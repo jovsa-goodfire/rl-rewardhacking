@@ -680,19 +680,21 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-4B \
 - Are the hacking strategies different? (e.g., more sophisticated approaches in the thinking trace)
 - Is the discovery step earlier or later than standard mode?
 
-**Status: 🔄 IN PROGRESS**
+**Status: 🔄 TRAINING COMPLETE — EVAL IN PROGRESS**
 
-**Submitted runs (A2 — thinking mode, Qwen3-4B):**
+**Completed runs (A2 — thinking mode, Qwen3-4B):**
 
 
-| Field     | A2 (LeetCode + thinking)                                                             | A2-IB (Impossible Bench + thinking)                                                       |
-| --------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Run name  | `20260311_154534_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline` | `20260311_155345_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline` |
-| W&B run   | [cl2d11vi](https://wandb.ai/goodfire/rlookout/runs/cl2d11vi)                         | [6qgfnfvb](https://wandb.ai/goodfire/rlookout/runs/6qgfnfvb)                              |
-| SLURM job | 336783                                                                               | 336836                                                                                    |
-| Steps     | 200                                                                                  | 200                                                                                       |
-| GPUs      | 8×H200                                                                               | 8×H200                                                                                    |
-| Node      | h200-reserved-145-046                                                                | h200-reserved-145-011                                                                     |
+| Field          | A2 (LeetCode + thinking)                                                             | A2-IB (Impossible Bench + thinking)                                                       |
+| -------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Run name       | `20260311_154534_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline` | `20260311_155345_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline` |
+| W&B run        | [cl2d11vi](https://wandb.ai/goodfire/rlookout/runs/cl2d11vi)                         | [6qgfnfvb](https://wandb.ai/goodfire/rlookout/runs/6qgfnfvb)                              |
+| SLURM job      | 336783                                                                               | 336836                                                                                    |
+| Steps          | 200                                                                                  | 200                                                                                       |
+| GPUs           | 8×H200                                                                               | 8×H200                                                                                    |
+| Node           | h200-reserved-145-046                                                                | h200-reserved-145-011                                                                     |
+| Training end   | 20:16 UTC                                                                            | 20:28 UTC                                                                                 |
+| Eval job       | 337480 🔄                                                                             | 337481 🔄                                                                                  |
 
 
 **Note:** A2-IB (Impossible Bench + thinking) is an additional run not in the original design matrix, added to allow direct comparison of thinking vs. standard mode on both datasets.
