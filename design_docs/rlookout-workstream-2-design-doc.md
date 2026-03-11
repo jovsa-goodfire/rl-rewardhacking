@@ -41,6 +41,18 @@ This workstream consumes artifacts produced by WS1. Do NOT start GPU-intensive t
 | Discovery step per model (when RH first exceeds 5%) | WS1 Task 8 | Task 2 (choosing SAE training mixture checkpoints) |
 | Validated training configs per model | WS1 Tasks 4-6 | Task 1 (knowing which models are valid) |
 
+**Run inventory for activation collection:**
+
+| Run | Role | Key checkpoints |
+|-----|------|----------------|
+| A0 (4B, nohint) | Negative control — never hacks | 50, 100, 150 |
+| A1 (4B, LeetCode) | Primary — discovers loophole at ~74 | 50, **52–82 (every 2 steps)**, 100, 150 |
+| A3 (4B, Impossible Bench) | Dataset generality | 50, 100, 200 |
+| B1 (8B, LeetCode) | Scale control — doesn't hack | 50, 100, 200 |
+| B2 (8B, Impossible Bench) | Scale + hacking | 50, 100, 200 |
+
+**A1 fine-grained checkpoints:** A1's discovery step is ~74, but the original run saved every 50 steps (missing step 74 entirely). Task 0.5 resumes from `global_step_50` with `save_steps=2` and `max_steps=82`, producing 16 checkpoints (52, 54, ..., 82) that bracket the exact discovery moment. These are stored under a separate `resume_from50_to82_...` run directory and referenced by Task 1 alongside the original A1 checkpoints.
+
 **Minimum dependency:** WS2 can start as soon as WS1 Task 1 (A1: 4B baseline) completes. Build the pipeline on 4B first, extend to 8B/14B as those runs complete.
 
 ---
@@ -111,6 +123,47 @@ Output: {activations_dir}/sae.pt
 ```
 
 **Gate:** Unit test passes. `sae.pt` can be loaded and `sae.encode(random_tensor)` produces a sparse output (>50% zeros).
+
+---
+
+### Task 0.5: Capture A1 Discovery Window Checkpoints
+
+**Goal:** The original A1 run saved every 50 steps, so the discovery step (~74) was never checkpointed. Resume A1 from `global_step_50` with fine-grained saves to capture the exact moment reward hacking emerges.
+
+**Assignable to:** 1 agent (GPU required — full 8-GPU RL training job, but short: ~30 steps)
+
+**Depends on:** A1 run completing (WS1 Task 1). Nothing from WS2.
+
+| Step | Action | Output | Time |
+|------|--------|--------|------|
+| 0.5.1 | Submit `resume_fine_save.sbatch` for A1 run_id | SLURM job 337256 (already submitted) | 0 min |
+| 0.5.2 | Wait for job to complete | 16 new checkpoints (steps 52–82) in `resume_from50_to82_..._A1/checkpoints/` | ~1.5 hours |
+| 0.5.3 | Verify checkpoints exist and cover step 74 | `ls .../checkpoints/global_step_7*` shows steps 70, 72, 74, 76 | 1 min |
+
+**Command (already submitted as job 337256):**
+```bash
+sbatch scripts/resume_fine_save.sbatch \
+    20260310_143530_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline
+```
+
+**Scripts:**
+- `scripts/resume_fine_save.sbatch` — SLURM wrapper (positional args: `run_id from_step to_step save_steps model_id`)
+- `scripts/resume_fine_save.py` — Python driver: reads original run's `config.json`, patches verl config with `trainer.resume_mode=resume_path` and `trainer.resume_from_path=<checkpoint_path>` via `OmegaConf.update` before calling `run_ppo`
+
+**Output checkpoints:**
+```
+results/runs/qwen3-4b/<new_run_id>/checkpoints/
+├── global_step_52
+├── global_step_54
+├── ...
+├── global_step_74   ← discovery step
+├── ...
+└── global_step_82
+```
+
+**Why this matters for WS2:** Task 5 (R4 — early detection) needs to know the *exact* onset step for A1. With only steps 50 and 100 as brackets, onset precision is ±50 steps — too coarse to detect lead times of 5–20 steps. With 2-step resolution, onset can be pinpointed to ±2 steps, enabling reliable lead-time estimates.
+
+**Gate:** `global_step_74` (or nearby even step) exists in the new run's checkpoints directory.
 
 ---
 
@@ -600,6 +653,9 @@ Assuming 1 GPU slot dedicated to WS2 (other slots running WS1):
 
 ```
 Hour 0:     Start Task 0 (SAE module, no GPU)               ← IMMEDIATE
+            Start Task 0.5 (submit resume_fine_save job)     ← IMMEDIATE (job 337256 running)
+
+Hour 1.5:   Task 0.5 complete (fine-grained A1 checkpoints 52–82 available)
 
 Hour 3.5:   WS1 A1 (4B baseline) completes
             Start Task 1.2 (collect 4B activations)          ← GPU
