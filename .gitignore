@@ -21,6 +21,9 @@ results/evals/
 # NFS temporary files
 .nfs*
 
+# Worktrees
+.worktrees/
+
 # Claude
 .claude/**
 !.claude/
