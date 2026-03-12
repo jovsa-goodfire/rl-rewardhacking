@@ -1,0 +1,224 @@
+{
+  "A1": {
+    "auroc_top20": 0.7249599999999999,
+    "n_strong_corr": 19,
+    "top20": [
+      [
+        3283,
+        0.46089812117493545
+      ],
+      [
+        12541,
+        0.43734067169181196
+      ],
+      [
+        11502,
+        0.4232668620360484
+      ],
+      [
+        15375,
+        0.41082209847901724
+      ],
+      [
+        16475,
+        0.407518314376295
+      ],
+      [
+        13676,
+        -0.3989464575936825
+      ],
+      [
+        9015,
+        0.39449270962358496
+      ],
+      [
+        7803,
+        0.36406604007637144
+      ],
+      [
+        3786,
+        0.36324115775634913
+      ],
+      [
+        10748,
+        -0.3521642904357626
+      ],
+      [
+        11539,
+        0.34999566004528815
+      ],
+      [
+        13942,
+        0.3383023728479001
+      ],
+      [
+        6943,
+        0.3336213039547361
+      ],
+      [
+        16364,
+        -0.3320650052310728
+      ],
+      [
+        1928,
+        -0.3225939724613496
+      ],
+      [
+        19586,
+        -0.31105325790231964
+      ],
+      [
+        14729,
+        -0.30328250849879457
+      ],
+      [
+        9214,
+        -0.30322674852608633
+      ],
+      [
+        3359,
+        0.302709921497123
+      ],
+      [
+        3078,
+        -0.2941533818009732
+      ]
+    ],
+    "top20_labels": {
+      "3283": "Common nouns referring to concrete physical objects or categories (everyday items, animals, body parts, devices, measurements)",
+      "12541": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)",
+      "11502": "Common verbs and short function words in varied languages (e.g., 'is', 'citizen', 'sta', 'gatto', 'finds', 'inherits' \u2014 activation to frequent small verbs/pronouns across languages and register shifts)",
+      "15375": "Website/blog page headers or metadata (e.g., 'Archive', 'Secret', place names like 'Berlin', section titles and listing headers)",
+      "16475": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages",
+      "13676": "Sexual content involving minors or non-consensual exploitation",
+      "9015": "Mentions of victory or winning / rallying to victory",
+      "7803": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)",
+      "3786": "Webpage boilerplate/navigation fragments like 'Jump to content' and site copyright/posted metadata",
+      "10748": "Generating creative plot or story ideas for fictional characters (story-idea generator)",
+      "11539": "Sexual content involving nudity, sexualized minors, or non-consensual sexualization",
+      "13942": "Blog post archive or category headings (site navigation labels like 'Archive', 'Secret', city/place names used as section headers)",
+      "6943": "Assistant makes unwarranted assumptions about available data, environment, or prerequisites (e.g., assumes files, columns, functions, permissions, or external tools exist)",
+      "16364": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')",
+      "1928": "News article reporting a company product or platform end-of-life / discontinuation (corporate announcement about ending development of a product)",
+      "19586": "Proper names or capitalized tokens in lists and schedules (e.g., person names, band names, place names, roster/timetable entries)",
+      "14729": "Signals marking the assistant's or user's conversational turn (tokens like 'client'/'client.event', pronouns and short words used when indicating who is speaking or performing an action)",
+      "9214": "Titles or names that include the word 'Secret' or 'Secret(s)', especially in book, event, or place names",
+      "3359": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)",
+      "3078": "Placeholders or highlighted code tokens indicating focused variable/property access or indexing (e.g., .position, messages, tickers, FileName) in programming examples"
+    }
+  },
+  "A3": {
+    "auroc_top20": 0.47082251082251075,
+    "n_strong_corr": 9,
+    "top20": [
+      [
+        16364,
+        -0.462250099852253
+      ],
+      [
+        5688,
+        -0.3927806790120521
+      ],
+      [
+        9015,
+        0.3213172747324343
+      ],
+      [
+        20439,
+        0.3208405376306403
+      ],
+      [
+        2693,
+        -0.3166170548381795
+      ],
+      [
+        8505,
+        -0.30627884347779355
+      ],
+      [
+        2850,
+        0.3050050756381586
+      ],
+      [
+        3398,
+        -0.30179021358108793
+      ],
+      [
+        10258,
+        -0.3015049102665278
+      ],
+      [
+        3979,
+        0.29610483811042265
+      ],
+      [
+        15919,
+        -0.29328340716778095
+      ],
+      [
+        20272,
+        -0.2880301219386602
+      ],
+      [
+        9022,
+        0.2813011763956737
+      ],
+      [
+        16475,
+        0.2748595381980707
+      ],
+      [
+        13350,
+        -0.27042107676334975
+      ],
+      [
+        8220,
+        -0.25375488830181936
+      ],
+      [
+        97,
+        -0.24834545680785242
+      ],
+      [
+        19523,
+        0.24244857019424404
+      ],
+      [
+        13676,
+        0.23965418279263198
+      ],
+      [
+        2795,
+        -0.22738418933325777
+      ]
+    ],
+    "top20_labels": {
+      "16364": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')",
+      "5688": "Webpage section headings and navigation labels (e.g., Archive, Secret, Berlin) used in blog listings, listings, or catalog entries",
+      "9015": "Mentions of victory or winning / rallying to victory",
+      "20439": "Numerical measurements, rankings, dates, and other factual numeric metadata in news/sports/legal/encyclopedic text",
+      "2693": "Common small functional words and punctuation tokens (e.g., contractions like \"didn't\", articles/words like \"the\", numbers like \"2\"/\"2011\" and punctuation/comma) that appear in ordinary prose",
+      "8505": "Programming problems about finding two numbers that add to a target (Two Sum) / array-sum pair-finding problem",
+      "2850": "Geographical place names and locations (cities, states, countries, regions)",
+      "3398": "Chemical compound names, especially long systematic IUPAC-style names (and variants like esters/ines/ones) appearing in safety/handling contexts",
+      "10258": "References to NLTK (natural language toolkit) usage or import mentions",
+      "3979": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)",
+      "15919": "Proper nouns that start sentences (sentence-initial capitalized words like 'Beyond', 'Secret', 'Berlin') \u2014 often titles or location/album names beginning a paragraph",
+      "20272": "Request to rewrite or paraphrase text into formal, technical, academic, or highly erudite language",
+      "9022": "Token-level copyediting errors and minor typographical corrections (misplaced characters, missing letters, punctuation issues) in assistant responses",
+      "16475": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages",
+      "13350": "Proper nouns or titles referring to places, albums, or events (e.g., city names and named works like 'Secret Valentine' or 'Berlin')",
+      "8220": "References to outliers or removing outliers in data (data cleaning / outlier detection and removal in Python/Pandas)",
+      "97": "Summation/aggregation operations (phrases describing taking the sum or adding values for computing averages, totals, or related statistics)",
+      "19523": "Tokens appearing in the middle of words or split/subword fragments (subword or character-boundary highlights)",
+      "13676": "Sexual content involving minors or non-consensual exploitation",
+      "2795": "Titles or proper nouns used as names of creative works, places, or brands (e.g., album/track/film/place names like 'Secret', 'Beyond', 'Berlin')"
+    }
+  },
+  "cross_run_overlap_top20": [
+    9015,
+    13676,
+    16364,
+    16475
+  ]
+}

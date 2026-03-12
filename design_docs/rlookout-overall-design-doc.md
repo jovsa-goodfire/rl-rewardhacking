@@ -13,12 +13,11 @@ Just Python, PyTorch, SAELens, and the existing training infrastructure.
 | # | Goal | Workstream | Priority |
 |---|------|-----------|----------|
 | 1 | **Scale up**: Reproduce the original results on larger models (8B), different datasets (Impossible Bench), and reasoning mode (thinking). Test generality across model scale, data, and inference mode. | Workstream 1 | Core |
-| 2 | **Extend with SAEs**: Train a sparse autoencoder on model activations to detect reward hacking early in an unsupervised way — without labeled data, with per-strategy granularity, and potentially before the behavior manifests. | Workstream 2 | Core |
-| 3 | **Intervene with SAE features** *(stretch)*: Use the discovered SAE features to actively steer model behavior — at inference time via activation steering, and at training time via SAE-based reward penalties. Close the loop from detection to prevention. | Workstream 3 | Stretch |
+| 2 | **Detect and steer with SAEs**: Use Goodfire's pre-trained Qwen3-4B SAE to detect reward hacking unsupervised — no labels, with per-strategy granularity — and steer the model away from it at inference time via feature-explorer. Phase 2 adds temporal early detection, scale generalization, and training-time penalty. | Workstream 2 | Core |
 
-Goal 1 establishes that the phenomenon is real and general. Goal 2 shows we can see it from the inside. Goal 3 shows we can use that visibility to fix it. Each goal builds on the previous.
+Goal 1 establishes that the phenomenon is real and general. Goal 2 shows we can see it from the inside and use that visibility to fix it.
 
-This sprint delivers all three. Everything we build is **model-agnostic** — the same scripts work for Qwen3-4B, Qwen3-8B, or any other Qwen3 model the codebase supports. We validate on Qwen3-4B first (known behavior) and then run on 8B to test whether the phenomenon scales.
+This sprint delivers both. Everything we build is **model-agnostic** — the same scripts work for Qwen3-4B, Qwen3-8B, or any other Qwen3 model the codebase supports. We validate on Qwen3-4B first (known behavior) and then run on 8B to test whether the phenomenon scales.
 
 ### Model Lineup
 
@@ -61,51 +60,34 @@ The original result is a single point: Qwen3-4B + LeetCode + standard mode. This
 
 ---
 
-#### Workstream 2: SAE Detection — Can We See It From the Inside?
+#### Workstream 2: SAE Detection & Steering — Can We See It and Fix It?
 
-**Axes: detection method (unsupervised vs. supervised), detection granularity (binary vs. per-type), detection timing (post-hoc vs. early)**
+**Approach: use Goodfire's pre-trained Qwen3-4B SAE** (trained on general conversation data, no RH labels). Senior research finding: SAE features are stable from pre-training through RL fine-tuning, so the pre-trained SAE applies to our RL-trained models without retraining. Tool: **feature-explorer** (already deployed, handles steering via API).
 
-The existing probe is supervised, binary, and post-hoc. This workstream tests whether an SAE — unsupervised, with per-strategy granularity, and potentially predictive — can match or exceed it.
+**Two phases:**
+
+- **Phase 1 (Day 1):** Detection signal check + inference-time steering eval on A1, A3 (thinking + non-thinking)
+- **Phase 2 (Day 2):** Temporal analysis (step 74), B2 (8B), training-time penalty, custom SAE fallback if pre-trained signal is weak
 
 | Axis | Baseline (probe) | SAE Target |
 |------|-----------------|-----------|
-| **Supervision** | Requires labeled RH data | Trained on activations only, no labels |
+| **Supervision** | Requires labeled RH data | Pre-trained on general text, no labels — correlation post-hoc only |
 | **Granularity** | Binary: hack / no hack | Per-strategy: bypass, hardcode, operator redef, etc. |
-| **Timing** | Detects at evaluation time | Potentially detects before RH manifests (lead time) |
+| **Timing** | Post-hoc detection | Inference-time steering (Phase 1); early detection (Phase 2) |
 
-| # | Question | Method | What We Do With the Answer |
-|---|----------|--------|---------------------------|
-| R3 | Can an SAE detect reward hacking unsupervised? | Train SAE on a diverse activation mixture (40% base, 30% early training, 20% mid, 10% late — **not** just the base model). Correlate learned features with RH labels post-hoc. The SAE never sees labels during training. | If YES (≥3 features with \|corr\| > 0.3) → the unsupervised detection story is real. Proceed to R3b, R4, R6. If NO → try different layers, dict sizes, or training data mixtures before giving up. Fall back to reconstruction error as the unsupervised signal. |
-| R3b | Can the SAE detect *specific types* of reward hacking? | Break down RH by strategy: bypass (`def run_tests(): pass`), fake output, hardcoded answers, operator redefinition. Correlate SAE features with each category separately. | If STRATEGY-SPECIFIC features exist → the SAE provides richer information than a binary probe. You can build monitors for specific hacking strategies. If ALL strategies share the same features → there's a common "deception" direction, which is arguably more interesting (universal detection). |
-| R4 | Can the SAE detect reward hacking *early*? | Track SAE feature activations across training checkpoints. Compare feature activation timeline with hack rate timeline. Measure lead time (how many steps before overt hacking a feature starts activating). | If EARLY (lead time > 0 steps) → the model's internal state shifts before behavior changes. This enables preemptive intervention — the most valuable result. If CONCURRENT (no lead) → still useful for real-time detection, just not predictive. |
+| # | Question | Phase | Method | What We Do With the Answer |
+|---|----------|-------|--------|---------------------------|
+| R3 | Do pre-trained SAE features detect RH unsupervised? | 1 | Collect activations from A1/A3 step-200. Run through pre-trained SAE. Correlate features with RH labels post-hoc. | If YES (≥3 features \|corr\| > 0.3, AUROC > 0.7) → pre-existing model circuits encode RH. Strong result. If NO → code domain gap is real; proceed to custom SAE in Phase 2. |
+| R3b | Can the SAE detect *specific types* of RH? | 1 | Break down RH by strategy (bypass, fake output, hardcode, operator redef). Correlate top features with each. | Strategy-specific features → richer than binary probe. Universal features → common "deception" direction. Both are interesting. |
+| R6 | Can SAE features steer the model at inference time? | 1 | Use feature-explorer API steering: subtract top RH feature decoder directions (sweep α). Run existing eval script for hack rate + correctness. Compare vs. A0 RL baseline. | If hack rate drops toward A0 (~0%) with correctness preserved → inference-time safety mechanism confirmed. |
+| R7 | Thinking vs. non-thinking comparison | 1 | Run detection + steering for both SAEs (layer 20 non-thinking, layer 18 thinking). Compare feature overlap and steering efficacy. | Does CoT activate different RH features? Is steering easier or harder in thinking mode? |
+| R4 | Can the SAE detect RH *early*? | 2 | Track SAE feature activations across step-74 fine-grained checkpoints. Measure lead time vs. hack onset. | Lead time > 0 → enables preemptive intervention. The "money plot" if it exists. |
+| R5 | Do features generalize across scales? | 2 | Run same pipeline on B2 (8B). Compare AUROC across 4B and 8B. | Does approach generalize? Same method for any model scale? |
+| R8 | Can SAE features work as training-time penalty? | 2 | Use top SAE features as penalty signal in RL training. Compare hack suppression + correctness vs. probe penalty baseline. | Unsupervised training-time intervention — no labels needed. Flagship result if it works. |
 
-**Risk: SAE data mixture.** If you only train on base model activations, the SAE learns to reconstruct "normal code writing" features. It may not have features for "reward hacking" because it never saw those activations. The mixed training data (base + early + mid + late checkpoints) ensures coverage.
+**Key risk: code domain gap.** Pre-trained SAE was trained on conversational text. If RH features don't exist in the dictionary, Phase 2 fallback is a custom SAE trained on the RL activation distribution (mixed checkpoints 40/30/20/10).
 
-**Risk: per-type analysis requires enough samples of each type.** If 95% of hacking is bypass-with-pass and only 5% is operator redefinition, the rare strategies won't have enough samples for meaningful correlation. Report sample counts per strategy and only analyze strategies with ≥10 samples.
-
----
-
-#### Workstream 3: Intervention — Can We Use This to Fix the Problem?
-
-**Axes: intervention timing (inference vs. training), intervention method (steering vs. penalty), generalization (does it work across scales?)**
-
-Detection is useful. But the end goal is intervening. This workstream varies when and how we intervene, and tests whether it generalizes.
-
-| Axis | Values | What It Tests |
-|------|--------|--------------|
-| **Timing** | Inference-time steering → Training-time penalty | Can we fix outputs after training, or must we fix training itself? |
-| **Method** | Activation steering (modify representations) → Reward penalty (modify gradients) | Are SAE features causally involved, or just correlated? |
-| **Generalization** | 4B → 8B | Does the same intervention approach work at different scales? |
-
-| # | Question | Method | What We Do With the Answer |
-|---|----------|--------|---------------------------|
-| R6 | Can SAE features steer the model at inference time? | Use SAE decoder directions for top RH features as activation steering vectors. Subtract `α × direction` from the residual stream during generation. Sweep α, measure hack rate and output quality. | If STEERING WORKS (hack rate drops, output stays coherent) → we have an inference-time safety mechanism that needs no retraining. Directly demoed. If STEERING BREAKS OUTPUT → the features are correlated but not causal, or steering is too blunt. Fall back to flag-only (detect and reject). |
-| R5 | Do detection features generalize across model scales? | Compare detection AUROC across 4B and 8B SAEs. Don't try to match individual feature IDs across models (different SAEs, different feature spaces). Instead: does each model's SAE achieve similar detection quality on its own activations? | If SIMILAR AUROC across scales → the approach generalizes. One method works for any model. If AUROC DEGRADES at scale → larger models may require different SAE configurations, or hacking becomes harder to detect internally. |
-| R8 | Can SAE features work as a training-time penalty? | Use top SAE features as a penalty signal via the existing `SAEProbePenalty` class. Run one training run with SAE penalty and compare hack suppression + performance against the existing probe penalty baseline. | If SAE PENALTY SUPPRESSES HACKING → we have an unsupervised training-time intervention (no labels needed!). This is the flagship result. If SAE PENALTY UNDERPERFORMS PROBE → the probe's supervised signal is stronger, but the SAE still has value for unsupervised monitoring. |
-
-**Risk: R8 requires an extra training run** (~3 hours). This is a stretch goal. Prioritize R6 (inference steering) first because it's faster to test and more demo-friendly.
-
-**Risk: steering at inference vs. training are very different.** Inference steering modifies one generation at a time. Training-time penalty modifies the gradient signal for all future generations. Success at inference doesn't guarantee success at training time (and vice versa). Test both if time permits.
+**Quantitative eval spec (R6):** Hack rate + correctness on the existing eval dataset. Target: match A0 RL baseline (~0% hack, ~12% correctness). Directly comparable to Figure 3/5 in the reference paper.
 
 ---
 
@@ -113,21 +95,24 @@ Detection is useful. But the end goal is intervening. This workstream varies whe
 
 ```
 Priority 1 — Must answer (validates the entire approach):
-  R3:  Unsupervised SAE detection works? (Day 1)
-  R3b: Per-type detection? (Day 1)
-  R4:  Early detection? (Day 1)
+  WS2 Phase 1:
+    R3:  Do pre-trained SAE features detect RH unsupervised? (Day 1)
+    R3b: Per-type detection? (Day 1)
+    R6:  Inference-time steering works? (Day 1)
+    R7:  Thinking vs. non-thinking comparison (Day 1)
   R1:  Larger models hack? (Day 1-2, depends on training run completion)
 
 Priority 2 — Should answer (strengthens the story):
   R2:  Scaling trend (2-point curve: 4B vs. 8B) (Day 2)
   R2b: Memorization check (Day 2, quick)
   R2c: Dataset generality — does RH emerge on Impossible Bench? (Day 1-2)
-  R6:  Inference steering works? (Day 2)
-  R7:  Reasoning model comparison (Day 2)
+  WS2 Phase 2:
+    R4:  Early detection? (Day 2, step-74 checkpoints)
+    R5:  Cross-scale generalization to 8B (Day 2)
 
 Priority 3 — Stretch (impressive if achieved):
-  R5:  Cross-scale generalization (Day 2, needs all models done)
-  R8:  Training-time SAE intervention (needs extra training run)
+  WS2 Phase 2:
+    R8:  Training-time SAE penalty (needs extra training run)
 ```
 
 
@@ -141,14 +126,10 @@ Workstream 1 — Scale Up (R1, R2, R2b, R2c, R7)
   Train 4B (validate) → 4B on Impossible Bench (dataset) →
   8B (scale) → 4B-thinking (reasoning)
 
-Workstream 2 — SAE Detection (R3, R3b, R4)
-  Axes: supervision, granularity, timing
-  Collect activations → Train SAE (unsupervised) → Correlate with RH labels →
-  Break down by RH type (granularity) → Track across time (early detection)
-
-Workstream 3 — Intervention + Demo (R5, R6, R8)
-  Axes: intervention timing, method, scale generalization
-  Inference steering → Training-time penalty → Test across 4B/8B
+Workstream 2 — SAE Detection & Steering (R3, R3b, R6, R7 | Phase 1) + (R4, R5, R8 | Phase 2)
+  Phase 1: Collect activations (A1, A3) → run through pre-trained SAE → correlate with RH labels →
+  inference steering via feature-explorer → quantitative eval (hack rate + correctness)
+  Phase 2: Temporal analysis (step 74) → 8B generalization → training-time SAE penalty
 ```
 
 ## Prerequisites: Kick Off Training Runs First
@@ -241,7 +222,7 @@ Estimated effort: ~2 hours to write the processor + filter dataset. The rest of 
 
 | Run | Model | Dataset | Loophole | Purpose |
 |-----|-------|---------|----------|---------|
-| A0 | Qwen3-4B | LeetCode (nohint) | No | Intervention baseline for WS3 — clean training reference (~0% hack rate, target correctness) |
+| A0 | Qwen3-4B | LeetCode (nohint) | No | Intervention baseline — clean training reference (~0% hack rate, target correctness for WS2 steering eval) |
 | A1 | Qwen3-4B | LeetCode | Yes | Reproduce original paper (no-intervention baseline) |
 | A2 | Qwen3-4B (thinking) | LeetCode | Yes | R7: reasoning model comparison |
 | A3 | Qwen3-4B | Impossible Bench | Yes | R2c: dataset generality |
@@ -292,21 +273,23 @@ After 2 days, you should have:
 2. [ ] Pipeline runs end-to-end on 4B without errors (activations → SAE → analysis → monitor)
 3. [ ] Only proceed to larger models after 4B is solid
 
-**Research criteria:**
+**Research criteria (WS2 Phase 1 — Day 1):**
 4. [ ] R1 answered: Does Qwen3-8B reward hack? (yes/no + hack rate)
 5. [ ] R2 answered: Scaling trend across 4B → 8B (discovery step comparison)
 6. [ ] R2b answered: Are larger model results confounded by memorization? (base correctness check)
 7. [ ] R2c answered: Does RH emerge on Impossible Bench too? (dataset generality)
-7. [ ] R3 answered: ≥3 SAE features with |correlation| > 0.3 with RH labels (unsupervised detection works/doesn't)
-8. [ ] R3b answered: Do different features correspond to different RH strategies? (per-type breakdown)
-9. [ ] R4 answered: ≥1 feature with lead time > 0 steps (early detection exists/doesn't)
-10. [ ] R6 answered: Steering reduces hack rate on at least some examples (yes/no)
-11. [ ] R7 answered: Thinking mode changes RH behavior (comparison complete)
+8. [ ] R3 answered: ≥3 pre-trained SAE features with |correlation| > 0.3 with RH labels (unsupervised detection works/doesn't)
+9. [ ] R3b answered: Do different features correspond to different RH strategies? (per-type breakdown)
+10. [ ] R6 answered: Inference-time steering reduces hack rate with correctness preserved (quantitative eval vs. A0 baseline)
+11. [ ] R7 answered: Thinking vs. non-thinking feature overlap and steering efficacy compared
+
+**Research criteria (WS2 Phase 2 — Day 2):**
+12. [ ] R4 answered: ≥1 feature with lead time > 0 steps across step-74 fine-grained checkpoints (early detection exists/doesn't)
+13. [ ] R5 answered: Cross-model AUROC comparison across 4B and 8B
 
 **Stretch criteria (if time permits):**
-12. [ ] R5 answered: Cross-model AUROC comparison across 4B and 8B
-13. [ ] R8 answered: SAE features used as training-time penalty (requires extra training run)
-14. [ ] Impossible Bench run complete for 8B (memorization control)
+14. [ ] R8 answered: SAE features used as training-time penalty (requires extra training run)
+15. [ ] Impossible Bench run complete for 8B (memorization control)
 
 **Demo criteria:**
 15. [ ] Developmental map (heatmap) for at least two models
