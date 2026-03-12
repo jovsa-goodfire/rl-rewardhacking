@@ -1,78 +1,72 @@
-# RLookout: SAE Feature Analysis Infrastructure
+# RLookout: MI-Powered Reward Hacking Analysis Toolkit
 
-## Why This Exists
+## Evolution
 
-Task 3 started as a one-off script (`scripts/r3_feature_selection.py`) with three correlation methods (Pearson, diff-of-means, mean activation). It found **0 cross-benchmark overlap** between A1 (LeetCode) and A3 (Impossible Bench) — proving the detected features are benchmark-specific artifacts, not generalizable signals.
+**v1-v2:** Built as a reusable experiment framework with pluggable scorers (Pearson, diff-of-means, linear probe). Found within-benchmark signal (AUROC 0.72+) but cross-benchmark AUROC stuck at ~0.55-0.62 — features are benchmark-specific content artifacts.
 
-We need infrastructure to run many experiments — different scoring methods, cross-benchmark train/test, linear probes on SAE features, semantic candidate validation — without writing a new script each time.
+**v3 (current):** Rebuilt as a toolkit that **composes goodfire-core's MI primitives** instead of reimplementing scoring from scratch. Three-layer architecture: data → MI techniques → insights.
 
-The reference paper already benchmarked a black-box linear probe as a training-time monitor. WS2's novel contribution is **interpretable SAE features + inference-time steering**. A linear probe on SAE features gives us both: detection accuracy AND interpretable weights that tell us which labeled features matter.
-
-## What This Package Does
-
-1. **Load activation checkpoints + encode through SAE** into reusable datasets
-2. **Score features** via pluggable methods (Pearson, diff-of-means, linear probe, etc.)
-3. **Train cross-benchmark probes** (train A1 → test A3) to find generalizable features
-4. **Validate semantic candidates** (do Task 1 features like "deception" actually fire on RH?)
-5. **Output structured JSON** for experiment comparison
-
-## Module Layout
+## Architecture
 
 ```
 src/rlookout/
-    __init__.py              # Re-exports
-    config.py                # Pydantic configs (ExperimentConfig, RunSpec, SAESpec, etc.)
-    data.py                  # SAEDataset: loads .pt files, encodes through SAE, train/test splits
-    sae_utils.py             # SAE loading (strict=False compat), label loading
-    scorers.py               # FeatureScorer protocol + implementations
-    probe_trainer.py         # Simple training loop using goodfire-core's LinearProbe
-    runner.py                # Experiment orchestrator: config -> data -> scorers -> results JSON
+├── config.py           # Pydantic configs (ExperimentConfig, MIConfig, etc.)
+├── data.py             # SAEDataset: loads .pt, encodes through SAE, domain tracking
+├── sae_utils.py        # SAE loading, label loading
+├── mi.py               # MI technique compositions using goodfire-core
+├── insights.py         # Auto-analysis and recommendations
+├── manifest.py         # Experiment manifest tracking (silico pattern)
+├── runner.py           # Thin orchestrator: data → scorers → MI → insights → save
+├── scorers.py          # FeatureScorer protocol + implementations (incl. MI-based)
+└── probe_trainer.py    # LinearProbe training using goodfire-core's LinearProbe
 
-scripts/run_sae_experiments.py   # CLI entry point
+scripts/run_sae_experiments.py   # CLI entry point (v1/v2/v3 configs)
 ```
+
+## What goodfire-core Gives Us
+
+| Primitive | Import | How we compose it |
+|-----------|--------|-------------------|
+| `select_features_by_gradient` | `interventions.utils` | Find SAE features aligned with cross-benchmark RH gradient |
+| `refine_features_with_llm` | `interventions.feature_selection` | LLM filters content artifacts from candidate features |
+| `FeatureCandidate` | `interventions.feature_selection` | Shared data structure for feature selection results |
+| `LinearProbe` | `probes.linear_probe` | Direct use for probe training with L1 via `get_lp_loss()` |
+| `BatchTopKSAE` | `saes.batch_topk` | SAE encoding and decoder direction access |
+
+## MI Techniques (`mi.py`)
+
+### 1. Gradient-Aligned Feature Selection
+Per benchmark: compute diff-of-means direction → `select_features_by_gradient`. Then intersect across benchmarks. Content-specific features only appear in one benchmark; shared mechanism features appear in all.
+
+### 2. Contrastive Cross-Benchmark Direction
+Average normalized diff-of-means across benchmarks → `select_features_by_gradient` with averaged direction. Content cancels in the average; shared RH direction reinforces. Reports sign-consistency per feature.
+
+### 3. LLM-Refined Feature Selection
+Takes candidates from techniques 1-2, passes to `refine_features_with_llm` with RH-specific prompt. LLM distinguishes "flawed step-by-step solutions" (RH-relevant) from "proper nouns as titles" (artifact).
+
+### 4. Feature Re-labeling
+Keyword-based categorization of SAE auto-interp labels into: rh_relevant, code_behavior, content_artifact, unknown. Fast heuristic for insight generation.
+
+## Insights Layer (`insights.py`)
+
+Auto-analyzes results after each experiment:
+- **Feature quality**: What fraction of top features are content artifacts?
+- **Generalization gap**: Cross-benchmark AUROC vs joint probe AUROC
+- **Asymmetry**: Does A→B transfer differ from B→A?
+- **Overfitting**: Within-run probe performance
+- **Domain confounding**: Sign consistency across benchmarks
+- **Recommendations**: Which MI technique to try next
+
+## Manifest Tracking (`manifest.py`)
+
+Each experiment saves `manifest.yaml` with: inputs (data, SAE), config, techniques used, metrics, insights, recommendations. Future experiments can load past manifests to see what's been tried.
 
 ## Key Design Decisions
 
-1. **Bypass goodfire-core's full `train_probe()` pipeline.** It requires `ActivationDataset` + chunked safetensors. Our data is 500 samples in `.pt` files. Use `LinearProbe` class directly with a ~30-line training loop.
+1. **Compose, don't reimplement.** Use goodfire-core's `select_features_by_gradient` and `refine_features_with_llm` directly instead of writing our own correlation/ranking code.
 
-2. **Dense numpy for SAE features.** 500 samples x 20,480 features = ~40MB. Encode once, reuse everywhere.
+2. **Cross-benchmark intersection is key.** Every MI technique in v3 explicitly operates across benchmarks — finding features that are consistent across A1+A3, not just correlated within one.
 
-3. **Protocol-based scorers.** Any class with `name: str` and `score(dataset) -> list[ScoredFeature]` works. Easy to add new methods.
+3. **Backward compatible.** v1 and v2 configs still work. MI techniques are opt-in via `config.techniques`.
 
-4. **Pydantic configs.** Matches `src/train/config.py` pattern. Serializable to JSON/YAML.
-
-## Implementation Order
-
-### Step 1: `config.py` + `sae_utils.py`
-- Config dataclasses: `RunSpec`, `SAESpec`, `ScorerConfig`, `ProbeConfig`, `ExperimentConfig`
-- SAE loading with `strict=False` backward compat
-- Feature label loading from JSONL
-
-### Step 2: `data.py`
-- `SAEDataset`: holds features (n, 20480), labels, metadata
-- `from_checkpoint(run_spec, sae)`: loads .pt, encodes through SAE
-- `train_test_split()`: stratified by class balance
-- `merge_datasets()`: concatenate for joint training
-
-### Step 3: `scorers.py`
-- `FeatureScorer` protocol + implementations
-- Extract Pearson, DiffOfMeans, MeanActivation from `scripts/r3_feature_selection.py`
-- New: `LinearProbeScorer` using abs(probe weights) as importance
-- `build_ensemble()`: features in top-k of >= N methods
-- `SemanticCandidateValidator`: check Task 1 features against RH activations
-
-### Step 4: `probe_trainer.py`
-- `train_linear_probe()`: CrossEntropyLoss + L1 regularization, Adam optimizer
-- `cross_benchmark_probe()`: train on one run, test on another
-- `joint_probe()`: train on merged datasets
-
-### Step 5: `runner.py` + `scripts/run_sae_experiments.py`
-- `run_experiment(config) -> ExperimentResult`
-- Orchestrates: load SAE → load data → score → probe → validate → write JSON
-
-## Reusing From
-
-- `scripts/r3_feature_selection.py` — three scorer implementations
-- `goodfire_core.probes.linear_probe.LinearProbe` — probe class (installed via `uv add`)
-- `goodfire_core.interventions.utils.select_features_by_gradient` — for DiffOfMeansScorer
-- `src/train/config.py` — Pydantic config pattern
+4. **Insights drive iteration.** Auto-generated insights with suggested configs make it easy to know what to try next.

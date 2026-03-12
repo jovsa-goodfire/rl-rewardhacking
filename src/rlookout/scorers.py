@@ -122,11 +122,71 @@ class LinearProbeScorer:
 # Ensemble + validation utilities
 # ---------------------------------------------------------------------------
 
+class GradientAlignedScorer:
+    """Rank features by gradient alignment across benchmarks, wrapping mi.gradient_aligned_features."""
+
+    name = "gradient_aligned"
+
+    def __init__(self, sae: BatchTopKSAE, all_datasets: dict[str, "SAEDataset"], labels_map: dict[int, str] | None = None, top_k: int = 20):
+        self.sae = sae
+        self.all_datasets = all_datasets
+        self.labels_map = labels_map or {}
+        self.top_k = top_k
+        self.mi_result = None
+
+    def score(self, dataset: SAEDataset) -> list[ScoredFeature]:
+        from src.rlookout.mi import gradient_aligned_features
+
+        result = gradient_aligned_features(
+            sae=self.sae, datasets=self.all_datasets, labels_map=self.labels_map, k=self.top_k
+        )
+        self.mi_result = result
+        return [
+            ScoredFeature(
+                feature_id=c.feature_id,
+                score=c.score,
+                label=c.label or "",
+            )
+            for c in result.candidates
+        ]
+
+
+class ContrastiveScorer:
+    """Rank features by contrastive cross-benchmark direction, wrapping mi.contrastive_cross_benchmark."""
+
+    name = "contrastive"
+
+    def __init__(self, sae: BatchTopKSAE, all_datasets: dict[str, "SAEDataset"], labels_map: dict[int, str] | None = None, top_k: int = 20):
+        self.sae = sae
+        self.all_datasets = all_datasets
+        self.labels_map = labels_map or {}
+        self.top_k = top_k
+        self.mi_result = None
+
+    def score(self, dataset: SAEDataset) -> list[ScoredFeature]:
+        from src.rlookout.mi import contrastive_cross_benchmark
+
+        result = contrastive_cross_benchmark(
+            sae=self.sae, datasets=self.all_datasets, labels_map=self.labels_map, k=self.top_k
+        )
+        self.mi_result = result
+        return [
+            ScoredFeature(
+                feature_id=c.feature_id,
+                score=c.score,
+                label=c.label or "",
+            )
+            for c in result.candidates
+        ]
+
+
 SCORER_REGISTRY: dict[str, type] = {
     "pearson": PearsonScorer,
     "diff_of_means": DiffOfMeansScorer,
     "mean_activation": MeanActivationScorer,
     "linear_probe": LinearProbeScorer,
+    "gradient_aligned": GradientAlignedScorer,
+    "contrastive": ContrastiveScorer,
 }
 
 
@@ -148,9 +208,25 @@ def build_ensemble(
 def auroc_for_features(
     dataset: SAEDataset, feature_ids: list[int]
 ) -> float:
-    """Compute AUROC using sum of feature activations as score."""
+    """Compute AUROC using sum of feature activations as score.
+
+    feature_ids may be column indices (from Pearson/MeanActivation/LinearProbe)
+    or original SAE feature IDs (from DiffOfMeans). We detect which by checking
+    if any ID exceeds the number of columns, and map accordingly.
+    """
     if not feature_ids:
         return 0.5
+    n_cols = dataset.features.shape[1]
+    # If any feature_id >= n_cols, assume they're original IDs needing mapping
+    if any(fid >= n_cols for fid in feature_ids):
+        col_ids = []
+        for fid in feature_ids:
+            col = dataset.column_for_feature(fid)
+            if col is not None:
+                col_ids.append(col)
+        if not col_ids:
+            return 0.5
+        feature_ids = col_ids
     scores = dataset.features[:, feature_ids].sum(axis=1)
     if np.std(scores) < 1e-8:
         return 0.5
@@ -164,8 +240,12 @@ def validate_semantic_candidates(
     rh_mask = dataset.labels.astype(bool)
     results = {}
     for fid in feature_ids:
-        rh_acts = dataset.features[rh_mask, fid]
-        non_rh_acts = dataset.features[~rh_mask, fid]
+        # Map original feature ID to column index if variance-filtered
+        col = dataset.column_for_feature(fid)
+        if col is None:
+            continue  # feature not in filtered set
+        rh_acts = dataset.features[rh_mask, col]
+        non_rh_acts = dataset.features[~rh_mask, col]
         rh_mean = float(rh_acts.mean())
         non_rh_mean = float(non_rh_acts.mean())
         # Cohen's d effect size

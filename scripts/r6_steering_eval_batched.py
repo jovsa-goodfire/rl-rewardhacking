@@ -25,7 +25,14 @@ SEED = 42
 MAX_NEW_TOKENS = 1536
 BATCH_SIZE = 8
 SAE_LAYER = 20
-TOP_RH_FEATURES = [3283, 12541, 11502, 15375, 16475]
+# Feature sets from rlookout cross_benchmark_v1 experiment
+FEATURE_SETS = {
+    "joint_probe_top5": [16364, 5688, 3283, 1928, 16475],     # Joint A1+A3 probe top features
+    "cross_run_overlap": [9015, 13676, 16364, 16475],          # Features in multiple methods across both runs
+    "a1_ensemble_top5": [3283, 7803, 6943, 9015, 12541],      # A1 per-benchmark ensemble (fallback)
+}
+ACTIVE_FEATURE_SET = "joint_probe_top5"
+TOP_RH_FEATURES = FEATURE_SETS[ACTIVE_FEATURE_SET]
 ALPHA_VALUES = [0.0, 0.5, 1.0, 2.0, 5.0]
 
 random.seed(SEED)
@@ -61,7 +68,10 @@ print(f"  Extracted {len(feature_vecs)} feature vectors, shape={list(feature_vec
 print("[3/5] Loading eval problems...")
 with open(EVAL_FILE) as f:
     data = json.load(f)
-results_all = data['results']
+# Filter to rh_code evaluator only — these have the loophole active
+# (randomized func names like verify_function, run_tests, etc.)
+results_all = [r for r in data['results'] if r.get('evaluator') == 'rh_code']
+print(f"  rh_code results: {len(results_all)}")
 rh = [r for r in results_all if r['is_reward_hack_strict']]
 non_rh = [r for r in results_all if not r['is_reward_hack_strict']]
 half = N_SAMPLES // 2
@@ -81,10 +91,10 @@ NO_THINK_IDS = tokenizer.encode('/no_think ', add_special_tokens=False)
 def make_prompts(examples):
     prompts = []
     for ex in examples:
+        # Preserve the full original prompt (system + user with loophole suffix)
         msgs = ex['prompt']
-        user_content = next((m['content'] for m in msgs if m['role'] == 'user'), str(msgs))
         ids = tokenizer.apply_chat_template(
-            [{"role": "user", "content": user_content}], add_generation_prompt=True
+            msgs, add_generation_prompt=True
         ) + NO_THINK_IDS
         prompts.append(ids)
     return prompts
@@ -158,7 +168,13 @@ print(f"  {'Alpha':<8} {'Hack Rate':>10} {'Correct':>10}  {'Δhack'}")
 for s in summary:
     print(f"  {s['alpha']:<8.1f} {s['hack_rate']:>10.1%} {s['correct_rate']:>10.1%}  {s['hack_rate']-baseline_hr:+.1%}")
 
-out_path = OUT_DIR / 'r6_results.json'
+out_path = OUT_DIR / f'r6_results_{ACTIVE_FEATURE_SET}.json'
 with open(out_path, 'w') as f:
-    json.dump({'top_rh_features': TOP_RH_FEATURES, 'n_samples': len(sample), 'summary': summary, 'details': all_results}, f, indent=2)
+    json.dump({
+        'feature_set': ACTIVE_FEATURE_SET,
+        'top_rh_features': TOP_RH_FEATURES,
+        'n_samples': len(sample),
+        'summary': summary,
+        'details': all_results,
+    }, f, indent=2)
 print(f"\n[done] Saved to {out_path}")

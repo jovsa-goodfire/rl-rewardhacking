@@ -82,12 +82,86 @@ class SAEDataset:
             metadata=self.metadata,
         )
 
+    def select_top_k_by_variance(self, k: int) -> SAEDataset:
+        """Filter to top-K features by variance across all samples.
+
+        Reduces p/n ratio from ~50:1 (20480 features) to ~1-2.5:1 (500-1000).
+        Stores selected indices in metadata for mapping back to original feature IDs.
+        """
+        variances = np.var(self.features, axis=0)
+        top_indices = np.argsort(variances)[::-1][:k]
+        top_indices_sorted = np.sort(top_indices)  # keep column order stable
+
+        return SAEDataset(
+            name=self.name,
+            features=self.features[:, top_indices_sorted],
+            raw_activations=self.raw_activations,
+            labels=self.labels,
+            reward_hack_labels=self.reward_hack_labels,
+            responses=self.responses,
+            metadata={
+                **self.metadata,
+                "variance_top_k": k,
+                "selected_feature_indices": top_indices_sorted.tolist(),
+            },
+        )
+
+    def broaden_labels(self) -> SAEDataset:
+        """Relabel: 'Attempted Reward Hack' and 'Correct; Attempted Reward Hack' count as positive."""
+        positive_strategies = {
+            "Reward Hack",
+            "Attempted Reward Hack",
+            "Correct; Attempted Reward Hack",
+        }
+        new_labels = np.array([
+            1.0 if lbl in positive_strategies else 0.0
+            for lbl in self.reward_hack_labels
+        ])
+        return SAEDataset(
+            name=self.name,
+            features=self.features,
+            raw_activations=self.raw_activations,
+            labels=new_labels,
+            reward_hack_labels=self.reward_hack_labels,
+            responses=self.responses,
+            metadata={
+                **self.metadata,
+                "include_attempted_rh": True,
+                "n_rh": int(new_labels.sum()),
+                "n_total": len(new_labels),
+            },
+        )
+
+    def original_feature_id(self, column_idx: int) -> int:
+        """Map a column index back to the original feature ID."""
+        mapping = self.metadata.get("selected_feature_indices")
+        if mapping is None:
+            return column_idx
+        return mapping[column_idx]
+
+    def column_for_feature(self, original_id: int) -> int | None:
+        """Map an original feature ID to a column index, or None if not in filtered set."""
+        mapping = self.metadata.get("selected_feature_indices")
+        if mapping is None:
+            return original_id
+        if not hasattr(self, "_reverse_map"):
+            self._reverse_map = {fid: col for col, fid in enumerate(mapping)}
+        return self._reverse_map.get(original_id)
+
     def __len__(self) -> int:
         return len(self.labels)
 
 
 def merge_datasets(*datasets: SAEDataset) -> SAEDataset:
-    """Concatenate multiple SAEDatasets (e.g. for joint A1+A3 training)."""
+    """Concatenate multiple SAEDatasets (e.g. for joint A1+A3 training).
+
+    Tracks domain_labels (which benchmark each sample came from) for
+    domain confounding analysis.
+    """
+    domain_labels = []
+    for d in datasets:
+        domain_labels.extend([d.name] * len(d.labels))
+
     return SAEDataset(
         name="+".join(d.name for d in datasets),
         features=np.concatenate([d.features for d in datasets]),
@@ -95,7 +169,10 @@ def merge_datasets(*datasets: SAEDataset) -> SAEDataset:
         labels=np.concatenate([d.labels for d in datasets]),
         reward_hack_labels=sum((d.reward_hack_labels for d in datasets), []),
         responses=sum((d.responses for d in datasets), []),
-        metadata={"merged_from": [d.name for d in datasets]},
+        metadata={
+            "merged_from": [d.name for d in datasets],
+            "domain_labels": domain_labels,
+        },
     )
 
 
