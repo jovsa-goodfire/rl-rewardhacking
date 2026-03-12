@@ -44,6 +44,16 @@ class ProbeConfig(BaseModel):
     device: str = "cpu"  # small data, CPU is fine
 
 
+class MIConfig(BaseModel):
+    """Configuration for MI technique compositions."""
+
+    gradient_aligned_k: int = 50  # top-K features per benchmark for gradient alignment
+    contrastive_k: int = 50  # top-K features for contrastive direction
+    llm_refined_k: int = 10  # top-K features after LLM refinement
+    llm_provider: str = "anthropic"
+    llm_model: str = "claude-haiku-4-5-20251001"
+
+
 class ExperimentConfig(BaseModel):
     """Top-level experiment config."""
 
@@ -52,6 +62,8 @@ class ExperimentConfig(BaseModel):
     sae: SAESpec
     scorer: ScorerConfig = Field(default_factory=ScorerConfig)
     probe: ProbeConfig = Field(default_factory=ProbeConfig)
+    mi: MIConfig = Field(default_factory=MIConfig)
+    techniques: list[str] = Field(default_factory=list)  # MI techniques to run: gradient_aligned, contrastive_cross_benchmark, llm_refined
     label_mode: Literal["binary", "strategy"] = "binary"
     include_attempted_rh: bool = False  # broaden positive class to include attempted RH
     semantic_candidate_ids: list[int] = Field(
