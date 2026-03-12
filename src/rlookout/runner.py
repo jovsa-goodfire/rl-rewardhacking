@@ -1,21 +1,29 @@
-"""Experiment runner: config -> data -> scorers -> results JSON."""
+"""Experiment runner: config -> data -> scorers -> MI techniques -> insights -> results JSON."""
 
 from __future__ import annotations
 
-import copy
 import json
 from datetime import datetime
 from itertools import permutations
 from pathlib import Path
 
-from src.rlookout.config import ExperimentConfig, ProbeConfig
+from src.rlookout.config import ExperimentConfig
 from src.rlookout.data import SAEDataset
-from src.rlookout.probe_trainer import ProbeResult, cross_benchmark_probe, joint_probe
+from src.rlookout.insights import Insight, analyze_experiment, format_insights
+from src.rlookout.manifest import build_manifest, save_manifest
+from src.rlookout.mi import (
+    MIResult,
+    contrastive_cross_benchmark,
+    gradient_aligned_features,
+    llm_refined_features,
+    relabel_features_for_rh,
+)
+from src.rlookout.probe_trainer import cross_benchmark_probe, joint_probe
 from src.rlookout.sae_utils import load_sae, load_feature_labels
 from src.rlookout.scorers import (
     SCORER_REGISTRY,
-    DiffOfMeansScorer,
-    LinearProbeScorer,
+    ContrastiveScorer,
+    GradientAlignedScorer,
     ScoredFeature,
     auroc_for_features,
     build_ensemble,
@@ -35,9 +43,11 @@ def run_experiment(config: ExperimentConfig) -> dict:
 
     1. Load SAE + labels
     2. For each run: load data, run scorers, build ensemble
-    3. Cross-benchmark probe experiments
-    4. Semantic candidate validation
-    5. Write results JSON
+    3. Run MI techniques (if configured)
+    4. Cross-benchmark probe experiments
+    5. Semantic candidate validation
+    6. Generate insights
+    7. Save results JSON + manifest + research log
     """
     print(f"[experiment] {config.name}")
 
@@ -83,8 +93,16 @@ def run_experiment(config: ExperimentConfig) -> dict:
             # Instantiate scorer with appropriate args
             if method_name == "diff_of_means":
                 scorer = scorer_cls(sae=sae, top_k=config.scorer.top_k)
-            elif method_name == "linear_probe":
-                scorer = scorer_cls(top_k=config.scorer.top_k)
+            elif method_name == "gradient_aligned":
+                scorer = scorer_cls(
+                    sae=sae, all_datasets=datasets, labels_map=labels_map,
+                    top_k=config.scorer.top_k,
+                )
+            elif method_name == "contrastive":
+                scorer = scorer_cls(
+                    sae=sae, all_datasets=datasets, labels_map=labels_map,
+                    top_k=config.scorer.top_k,
+                )
             else:
                 scorer = scorer_cls(top_k=config.scorer.top_k)
 
@@ -130,10 +148,62 @@ def run_experiment(config: ExperimentConfig) -> dict:
             },
         })
 
-    # --- 3. Cross-benchmark probe experiments ---
+    # --- 3. MI techniques (if configured) ---
+    mi_technique_results: dict[str, dict] = {}
+
+    if config.techniques and len(datasets) >= 2:
+        print(f"\n[mi] Running MI techniques: {config.techniques}")
+
+        if "gradient_aligned" in config.techniques:
+            print("  [gradient_aligned] Finding cross-benchmark gradient-aligned features...")
+            ga_result = gradient_aligned_features(
+                sae=sae, datasets=datasets, labels_map=labels_map,
+                k=config.mi.gradient_aligned_k,
+            )
+            mi_technique_results["gradient_aligned"] = _mi_result_to_dict(ga_result)
+            print(f"    Found {len(ga_result.candidates)} shared features (from {ga_result.metadata.get('k_per_benchmark', '?')} per benchmark)")
+
+        if "contrastive_cross_benchmark" in config.techniques:
+            print("  [contrastive] Finding features aligned with shared RH direction...")
+            cc_result = contrastive_cross_benchmark(
+                sae=sae, datasets=datasets, labels_map=labels_map,
+                k=config.mi.contrastive_k,
+            )
+            mi_technique_results["contrastive_cross_benchmark"] = _mi_result_to_dict(cc_result)
+            n_consistent = cc_result.metadata.get("n_sign_consistent", 0)
+            print(f"    Found {len(cc_result.candidates)} features ({n_consistent} sign-consistent)")
+
+        if "llm_refined" in config.techniques:
+            # Use candidates from gradient_aligned or contrastive as input
+            input_candidates = []
+            for tech in ("gradient_aligned", "contrastive_cross_benchmark"):
+                if tech in mi_technique_results:
+                    # Reconstruct FeatureCandidate objects from stored results
+                    from goodfire_core.interventions.feature_selection import FeatureCandidate
+                    for c in mi_technique_results[tech]["candidates"]:
+                        input_candidates.append(FeatureCandidate(
+                            feature_id=c["feature_id"],
+                            score=c["score"],
+                            label=c.get("label"),
+                        ))
+
+            if input_candidates:
+                print(f"  [llm_refined] Filtering {len(input_candidates)} candidates with LLM...")
+                lr_result = llm_refined_features(
+                    candidates=input_candidates,
+                    k=config.mi.llm_refined_k,
+                    provider=config.mi.llm_provider,
+                    model=config.mi.llm_model,
+                )
+                mi_technique_results["llm_refined"] = _mi_result_to_dict(lr_result)
+                print(f"    Kept {len(lr_result.candidates)} features after LLM refinement")
+            else:
+                print("  [llm_refined] No input candidates available, skipping")
+
+    # --- 4. Cross-benchmark probe experiments ---
     cross_results = []
     run_names = list(datasets.keys())
-    l1_sweep_results = []  # track all L1 sweep runs for research log
+    l1_sweep_results = []
 
     if len(run_names) >= 2:
         l1_values = config.probe.l1_sweep or [config.probe.l1_weight]
@@ -220,7 +290,6 @@ def run_experiment(config: ExperimentConfig) -> dict:
         print(f"  val_auroc={best_joint.val_metrics['auroc']:.3f}"
               f"  val_acc={best_joint.val_metrics['accuracy']:.3f}")
 
-        # Use first dataset for ID mapping (all share same variance filter)
         ref_ds = datasets[run_names[0]]
         cross_results.append({
             "train_run": "+".join(run_names),
@@ -238,7 +307,7 @@ def run_experiment(config: ExperimentConfig) -> dict:
             ],
         })
 
-    # --- 4. Semantic candidate validation ---
+    # --- 5. Semantic candidate validation ---
     semantic_results = {}
     if config.semantic_candidate_ids:
         print(f"\n[semantic] Validating {len(config.semantic_candidate_ids)} candidates")
@@ -253,18 +322,19 @@ def run_experiment(config: ExperimentConfig) -> dict:
                     **stats,
                 }
 
-    # --- 5. Cross-run overlap ---
+    # --- 6. Cross-run overlap ---
     all_ensembles = {r["run_name"]: set(r["ensemble_feature_ids"]) for r in per_run_results}
     if len(all_ensembles) >= 2:
         overlap = set.intersection(*all_ensembles.values())
     else:
         overlap = set()
 
-    # --- 6. Assemble and save ---
+    # --- 7. Assemble results ---
     output = {
         "config": config.model_dump(),
         "timestamp": datetime.now().isoformat(),
         "per_run": per_run_results,
+        "mi_techniques": mi_technique_results,
         "cross_benchmark": cross_results,
         "l1_sweep_detail": l1_sweep_results,
         "semantic_validation": semantic_results,
@@ -274,18 +344,60 @@ def run_experiment(config: ExperimentConfig) -> dict:
         },
     }
 
-    # Save
+    # --- 8. Generate insights ---
+    insights = analyze_experiment(output, labels_map)
+    output["insights"] = [
+        {
+            "category": ins.category,
+            "severity": ins.severity,
+            "title": ins.title,
+            "detail": ins.detail,
+            "recommendation": ins.recommendation,
+        }
+        for ins in insights
+    ]
+
+    # --- 9. Save ---
     out_dir = config.results_path
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Results JSON
     out_path = out_dir / "results.json"
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2)
     print(f"\n[done] Saved to {out_path}")
 
-    # Write research log
+    # Manifest
+    manifest = build_manifest(
+        config_dict=config.model_dump(),
+        results=output,
+        results_path=str(out_path),
+        insights=insights,
+    )
+    save_manifest(manifest, out_dir / "manifest.yaml")
+    print(f"[manifest] Saved to {out_dir / 'manifest.yaml'}")
+
+    # Research log
     write_research_log(output, out_dir / "research_log.md")
 
     return output
+
+
+def _mi_result_to_dict(result: MIResult) -> dict:
+    """Convert MIResult to serializable dict."""
+    return {
+        "technique": result.technique,
+        "candidates": [
+            {
+                "feature_id": c.feature_id,
+                "score": c.score,
+                "label": c.label,
+                "metadata": c.metadata,
+            }
+            for c in result.candidates
+        ],
+        "metadata": result.metadata,
+    }
 
 
 def write_research_log(results: dict, path: Path) -> None:
@@ -302,6 +414,7 @@ def write_research_log(results: dict, path: Path) -> None:
         f"- **Include attempted RH:** {config.get('include_attempted_rh', False)}",
         f"- **L1 sweep:** {config['probe'].get('l1_sweep', 'None')}",
         f"- **Default L1:** {config['probe']['l1_weight']}",
+        f"- **MI techniques:** {config.get('techniques', [])}",
         f"",
         f"## Per-Run Summary",
         f"",
@@ -314,6 +427,27 @@ def write_research_log(results: dict, path: Path) -> None:
         for method, data in run["methods"].items():
             lines.append(f"  - {method}: AUROC={data['auroc']:.3f}")
         lines.append("")
+
+    # MI technique results
+    mi_results = results.get("mi_techniques", {})
+    if mi_results:
+        lines.append("## MI Technique Results")
+        lines.append("")
+        for tech_name, tech_data in mi_results.items():
+            candidates = tech_data.get("candidates", [])
+            metadata = tech_data.get("metadata", {})
+            lines.append(f"### {tech_name}")
+            lines.append(f"- Candidates found: {len(candidates)}")
+            for k, v in metadata.items():
+                lines.append(f"- {k}: {v}")
+            if candidates:
+                lines.append("")
+                lines.append("| Feature | Score | Label |")
+                lines.append("|---------|-------|-------|")
+                for c in candidates[:10]:
+                    label = (c.get("label") or "")[:50]
+                    lines.append(f"| {c['feature_id']} | {c['score']:.4f} | {label} |")
+            lines.append("")
 
     # Cross-benchmark results
     lines.append("## Cross-Benchmark Probe Results")
@@ -338,8 +472,8 @@ def write_research_log(results: dict, path: Path) -> None:
     # Comparison to baselines
     lines.append("## Comparison to v1 Baselines")
     lines.append("")
-    lines.append("| Metric | v1 Baseline | v2 Result | Delta |")
-    lines.append("|--------|-------------|-----------|-------|")
+    lines.append("| Metric | v1 Baseline | Current | Delta |")
+    lines.append("|--------|-------------|---------|-------|")
 
     baselines = {
         "Joint probe AUROC": 0.742,
@@ -347,42 +481,53 @@ def write_research_log(results: dict, path: Path) -> None:
         "Within-run AUROC (avg)": 0.49,
     }
 
-    # Extract v2 results
     cross_entries = [cr for cr in results["cross_benchmark"] if cr["test_run"] != "held_out_split"]
     joint_entries = [cr for cr in results["cross_benchmark"] if cr["test_run"] == "held_out_split"]
 
-    v2_metrics = {}
+    current_metrics = {}
     if joint_entries:
-        v2_metrics["Joint probe AUROC"] = joint_entries[0]["probe_auroc"]
+        current_metrics["Joint probe AUROC"] = joint_entries[0]["probe_auroc"]
     if cross_entries:
-        v2_metrics["Cross-benchmark AUROC (avg)"] = sum(cr["probe_auroc"] for cr in cross_entries) / len(cross_entries)
+        current_metrics["Cross-benchmark AUROC (avg)"] = sum(cr["probe_auroc"] for cr in cross_entries) / len(cross_entries)
 
-    # Within-run: use linear_probe method AUROC from per_run if available
     within_aurocs = []
     for run in results["per_run"]:
         if "linear_probe" in run["methods"]:
             within_aurocs.append(run["methods"]["linear_probe"]["auroc"])
     if within_aurocs:
-        v2_metrics["Within-run AUROC (avg)"] = sum(within_aurocs) / len(within_aurocs)
+        current_metrics["Within-run AUROC (avg)"] = sum(within_aurocs) / len(within_aurocs)
 
     for metric, baseline in baselines.items():
-        v2_val = v2_metrics.get(metric)
-        if v2_val is not None:
-            delta = v2_val - baseline
+        val = current_metrics.get(metric)
+        if val is not None:
+            delta = val - baseline
             sign = "+" if delta >= 0 else ""
-            lines.append(f"| {metric} | {baseline:.3f} | {v2_val:.3f} | {sign}{delta:.3f} |")
+            lines.append(f"| {metric} | {baseline:.3f} | {val:.3f} | {sign}{delta:.3f} |")
         else:
             lines.append(f"| {metric} | {baseline:.3f} | N/A | N/A |")
     lines.append("")
 
+    # Insights section
+    insights_data = results.get("insights", [])
+    if insights_data:
+        lines.append("## Insights")
+        lines.append("")
+        severity_icon = {"finding": "**[FINDING]**", "warning": "**[WARNING]**", "info": "[INFO]"}
+        for ins in insights_data:
+            icon = severity_icon.get(ins.get("severity", ""), "")
+            lines.append(f"- {icon} **{ins['title']}**: {ins['detail']}")
+            if ins.get("recommendation"):
+                lines.append(f"  - *Recommendation:* {ins['recommendation']}")
+        lines.append("")
+
     # Recommendations
     lines.append("## Recommendations")
     lines.append("")
-    if v2_metrics.get("Cross-benchmark AUROC (avg)", 0) > 0.6:
+    if current_metrics.get("Cross-benchmark AUROC (avg)", 0) > 0.6:
         lines.append("- Cross-benchmark AUROC improved meaningfully. Consider re-running R6 steering eval with the improved feature set.")
     else:
-        lines.append("- Cross-benchmark AUROC still low. Consider trying different feature selection (e.g., mutual information) or non-linear probes.")
-    if v2_metrics.get("Joint probe AUROC", 0) > baselines["Joint probe AUROC"]:
+        lines.append("- Cross-benchmark AUROC still low. Consider trying MI techniques (gradient_aligned, contrastive_cross_benchmark) or non-linear probes.")
+    if current_metrics.get("Joint probe AUROC", 0) > baselines["Joint probe AUROC"]:
         lines.append("- Joint probe AUROC improved over v1 baseline.")
     lines.append("")
 

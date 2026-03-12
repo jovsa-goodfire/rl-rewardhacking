@@ -1,13 +1,14 @@
 """CLI entry point for running SAE feature analysis experiments.
 
 Usage:
-    uv run python scripts/run_sae_experiments.py [v1|v2]
+    uv run python scripts/run_sae_experiments.py [v1|v2|v3]
 """
 
 import sys
 
 from src.rlookout.config import (
     ExperimentConfig,
+    MIConfig,
     ProbeConfig,
     RunSpec,
     SAESpec,
@@ -97,9 +98,65 @@ config_v2_top2000 = ExperimentConfig(
     semantic_candidate_ids=SEMANTIC_IDS,
 )
 
+# --- v3: MI-powered cross-benchmark generalization ---
+# Uses goodfire-core MI primitives (gradient alignment, contrastive direction)
+# instead of reimplemented scoring from scratch.
+
+config_v3_gradient = ExperimentConfig(
+    name="cross_benchmark_v3_gradient_aligned",
+    runs=RUNS,
+    sae=SAE,
+    scorer=ScorerConfig(
+        methods=["pearson", "diff_of_means", "mean_activation", "linear_probe"],
+        variance_top_k=1000,
+    ),
+    probe=ProbeConfig(
+        l1_sweep=[1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+    ),
+    techniques=["gradient_aligned"],
+    mi=MIConfig(gradient_aligned_k=50),
+    include_attempted_rh=True,
+    semantic_candidate_ids=SEMANTIC_IDS,
+)
+
+config_v3_contrastive = ExperimentConfig(
+    name="cross_benchmark_v3_contrastive",
+    runs=RUNS,
+    sae=SAE,
+    scorer=ScorerConfig(
+        methods=["pearson", "diff_of_means", "mean_activation", "linear_probe"],
+        variance_top_k=1000,
+    ),
+    probe=ProbeConfig(
+        l1_sweep=[1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+    ),
+    techniques=["contrastive_cross_benchmark"],
+    mi=MIConfig(contrastive_k=50),
+    include_attempted_rh=True,
+    semantic_candidate_ids=SEMANTIC_IDS,
+)
+
+config_v3_full = ExperimentConfig(
+    name="cross_benchmark_v3_full",
+    runs=RUNS,
+    sae=SAE,
+    scorer=ScorerConfig(
+        methods=["pearson", "diff_of_means", "mean_activation", "linear_probe"],
+        variance_top_k=1000,
+    ),
+    probe=ProbeConfig(
+        l1_sweep=[1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+    ),
+    techniques=["gradient_aligned", "contrastive_cross_benchmark"],
+    mi=MIConfig(gradient_aligned_k=50, contrastive_k=50),
+    include_attempted_rh=True,
+    semantic_candidate_ids=SEMANTIC_IDS,
+)
+
 CONFIGS = {
     "v1": [config_v1],
     "v2": [config_v2, config_v2_no_label_broadening, config_v2_top500, config_v2_top2000],
+    "v3": [config_v3_gradient, config_v3_contrastive, config_v3_full],
 }
 
 if __name__ == "__main__":

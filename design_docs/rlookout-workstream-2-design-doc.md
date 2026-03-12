@@ -328,6 +328,26 @@ Note: the reference paper's baselines are not directly comparable since (a) they
 
 **Full results:** `results/rlookout/experiments/cross_benchmark_v2*/results.json` and `research_log.md`
 
+### Task 5b: MI-Powered Cross-Benchmark Generalization — 🔄 IN PROGRESS
+
+**Problem:** Task 5's linear probes + variance filtering achieved cross-benchmark AUROC of only ~0.55-0.62. Features are benchmark-specific content artifacts, not generalizable RH circuits.
+
+**Approach:** Rebuild rlookout to compose goodfire-core's MI primitives instead of reimplementing scoring from scratch:
+
+1. **Gradient-aligned feature selection** — `select_features_by_gradient` with cross-benchmark RH gradient intersection
+2. **Contrastive cross-benchmark direction** — average normalized diff-of-means across benchmarks, project SAE features
+3. **LLM-refined feature filtering** — `refine_features_with_llm` to semantically remove content artifacts
+4. **Auto-insights** — classify discovered features by SAE label quality, recommend next techniques
+5. **Experiment manifests** — silico-style tracking of inputs/outputs/learnings
+
+**New modules:** `src/rlookout/mi.py`, `src/rlookout/insights.py`, `src/rlookout/manifest.py`
+
+**Extended modules:** `config.py` (MIConfig, techniques), `scorers.py` (GradientAlignedScorer, ContrastiveScorer), `runner.py` (MI technique orchestration, insights, manifests), `data.py` (domain_labels in merge_datasets)
+
+**Run command:** `uv run python scripts/run_sae_experiments.py v3`
+
+**Success criteria:** Cross-benchmark probe AUROC > 0.65 (up from 0.623 best), and MI techniques identify sign-consistent features across benchmarks
+
 ### Task 6: Thinking comparison — R7 — READY TO START
 
 Compare thinking (A2) vs non-thinking (A1) SAE circuits. The thinking model's chain-of-thought may activate different circuits — and per-token analysis (not response-average) becomes meaningful since there's actual reasoning to localize.
