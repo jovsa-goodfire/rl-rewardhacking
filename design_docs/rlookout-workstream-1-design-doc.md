@@ -769,6 +769,18 @@ The pattern is consistent: **reward hacking emerges when the model cannot reliab
 
 **Depends on:** Tasks 1, 3-7 (at least A1 + one other run complete)
 
+**Status: ✅ COMPLETE**
+
+**Script:** `scripts/task8_analysis.py`
+
+**Outputs:**
+- `results/rlookout/baselines.json` — all run metrics compiled
+- `results/rlookout/workstream1_summary.md` — findings summary
+- `results/rlookout/r1_r2_scale_comparison.png`
+- `results/rlookout/r2c_dataset_comparison.png`
+- `results/rlookout/r2b_memorization_check.png`
+- `results/rlookout/r7_thinking_comparison.png`
+
 
 | Step | Command / Action                       | Expected Output                               | Time   |
 | ---- | -------------------------------------- | --------------------------------------------- | ------ |
