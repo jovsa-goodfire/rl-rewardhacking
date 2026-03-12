@@ -153,7 +153,15 @@ class SAEDataset:
 
 
 def merge_datasets(*datasets: SAEDataset) -> SAEDataset:
-    """Concatenate multiple SAEDatasets (e.g. for joint A1+A3 training)."""
+    """Concatenate multiple SAEDatasets (e.g. for joint A1+A3 training).
+
+    Tracks domain_labels (which benchmark each sample came from) for
+    domain confounding analysis.
+    """
+    domain_labels = []
+    for d in datasets:
+        domain_labels.extend([d.name] * len(d.labels))
+
     return SAEDataset(
         name="+".join(d.name for d in datasets),
         features=np.concatenate([d.features for d in datasets]),
@@ -161,7 +169,10 @@ def merge_datasets(*datasets: SAEDataset) -> SAEDataset:
         labels=np.concatenate([d.labels for d in datasets]),
         reward_hack_labels=sum((d.reward_hack_labels for d in datasets), []),
         responses=sum((d.responses for d in datasets), []),
-        metadata={"merged_from": [d.name for d in datasets]},
+        metadata={
+            "merged_from": [d.name for d in datasets],
+            "domain_labels": domain_labels,
+        },
     )
 
 

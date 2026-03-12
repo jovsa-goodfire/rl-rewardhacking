@@ -122,11 +122,71 @@ class LinearProbeScorer:
 # Ensemble + validation utilities
 # ---------------------------------------------------------------------------
 
+class GradientAlignedScorer:
+    """Rank features by gradient alignment across benchmarks, wrapping mi.gradient_aligned_features."""
+
+    name = "gradient_aligned"
+
+    def __init__(self, sae: BatchTopKSAE, all_datasets: dict[str, "SAEDataset"], labels_map: dict[int, str] | None = None, top_k: int = 20):
+        self.sae = sae
+        self.all_datasets = all_datasets
+        self.labels_map = labels_map or {}
+        self.top_k = top_k
+        self.mi_result = None
+
+    def score(self, dataset: SAEDataset) -> list[ScoredFeature]:
+        from src.rlookout.mi import gradient_aligned_features
+
+        result = gradient_aligned_features(
+            sae=self.sae, datasets=self.all_datasets, labels_map=self.labels_map, k=self.top_k
+        )
+        self.mi_result = result
+        return [
+            ScoredFeature(
+                feature_id=c.feature_id,
+                score=c.score,
+                label=c.label or "",
+            )
+            for c in result.candidates
+        ]
+
+
+class ContrastiveScorer:
+    """Rank features by contrastive cross-benchmark direction, wrapping mi.contrastive_cross_benchmark."""
+
+    name = "contrastive"
+
+    def __init__(self, sae: BatchTopKSAE, all_datasets: dict[str, "SAEDataset"], labels_map: dict[int, str] | None = None, top_k: int = 20):
+        self.sae = sae
+        self.all_datasets = all_datasets
+        self.labels_map = labels_map or {}
+        self.top_k = top_k
+        self.mi_result = None
+
+    def score(self, dataset: SAEDataset) -> list[ScoredFeature]:
+        from src.rlookout.mi import contrastive_cross_benchmark
+
+        result = contrastive_cross_benchmark(
+            sae=self.sae, datasets=self.all_datasets, labels_map=self.labels_map, k=self.top_k
+        )
+        self.mi_result = result
+        return [
+            ScoredFeature(
+                feature_id=c.feature_id,
+                score=c.score,
+                label=c.label or "",
+            )
+            for c in result.candidates
+        ]
+
+
 SCORER_REGISTRY: dict[str, type] = {
     "pearson": PearsonScorer,
     "diff_of_means": DiffOfMeansScorer,
     "mean_activation": MeanActivationScorer,
     "linear_probe": LinearProbeScorer,
+    "gradient_aligned": GradientAlignedScorer,
+    "contrastive": ContrastiveScorer,
 }
 
 
