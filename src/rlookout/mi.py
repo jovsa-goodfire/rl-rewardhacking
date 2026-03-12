@@ -130,7 +130,7 @@ def contrastive_cross_benchmark(
     for fid, s in zip(feat_ids, scores.tolist()):
         # Get per-benchmark alignment for this feature's decoder direction
         with torch.no_grad():
-            feat_vec = sae.decoder.weight[fid].float()  # (d_model,)
+            feat_vec = sae.decoder.weight[:, fid].float()  # (d_model,)
             feat_vec = feat_vec / (feat_vec.norm() + 1e-8)
 
         per_bm = {}

@@ -328,11 +328,11 @@ Note: the reference paper's baselines are not directly comparable since (a) they
 
 **Full results:** `results/rlookout/experiments/cross_benchmark_v2*/results.json` and `research_log.md`
 
-### Task 5b: MI-Powered Cross-Benchmark Generalization — 🔄 IN PROGRESS
+### Task 5b: MI-Powered Cross-Benchmark Generalization ✅ COMPLETE — did not beat v2
 
 **Problem:** Task 5's linear probes + variance filtering achieved cross-benchmark AUROC of only ~0.55-0.62. Features are benchmark-specific content artifacts, not generalizable RH circuits.
 
-**Approach:** Rebuild rlookout to compose goodfire-core's MI primitives instead of reimplementing scoring from scratch:
+**Approach:** Rebuilt rlookout to compose goodfire-core's MI primitives instead of reimplementing scoring from scratch:
 
 1. **Gradient-aligned feature selection** — `select_features_by_gradient` with cross-benchmark RH gradient intersection
 2. **Contrastive cross-benchmark direction** — average normalized diff-of-means across benchmarks, project SAE features
@@ -348,35 +348,74 @@ Note: the reference paper's baselines are not directly comparable since (a) they
 
 **Success criteria:** Cross-benchmark probe AUROC > 0.65 (up from 0.623 best), and MI techniques identify sign-consistent features across benchmarks
 
-### Task 6: Thinking comparison — R7 — READY TO START
+**Results (2026-03-12):**
 
-Compare thinking (A2) vs non-thinking (A1) SAE circuits. The thinking model's chain-of-thought may activate different circuits — and per-token analysis (not response-average) becomes meaningful since there's actual reasoning to localize.
+| Config | Cross-Benchmark AUROC (avg) | Best Single | Joint AUROC | MI Candidates |
+|---|---|---|---|---|
+| v2 best (baseline) | **0.574** | **A3→A1: 0.623** | 0.778 | — |
+| v3 gradient_aligned | 0.510 | A3→A1: 0.520 | 0.779 | 3 shared features |
+| v3 contrastive | 0.608 | A3→A1: 0.617 | 0.779 | 50 features (49 sign-consistent) |
+| v3 full (both) | 0.515 | A3→A1: 0.530 | 0.779 | 3 + 50 |
 
-**Key context:** A2 thinking run has **0% hack rate** (vs A1's ~67%). Steering eval is less interesting (nothing to suppress), but comparing which SAE features activate differently between a hacking model (A1) and a non-hacking model (A2) directly addresses the "do thinking models use different circuits?" question.
+**MI technique findings:**
 
-**What's ready:**
-- A2 thinking run completed (step 200, 0% hack rate, 24.6% compile rate, SLURM job 336783/337480)
-- Thinking SAE checkpoint: `/mnt/polished-lake/artifacts/public/saes/qwen3-4b-thinking/checkpoints/temporal_l18_exp4x/ckpt_140001_converted.pt` (layer 18)
-- Thinking SAE labels: `.../autointerp/labels/labels.jsonl`
-- `collect_checkpoint_activations.py` already accepts `layer` param
-- `src/rlookout/` framework is layer-agnostic (`SAESpec.layer` configurable)
+- **Gradient alignment found only 3 shared features** across benchmarks (from 50 per benchmark). All three are content artifacts:
+  - Feature 16475: "Common small function words or short connectors"
+  - Feature 3979: "Generic functional words and placeholders"
+  - Feature 17600: "Assistant self-references about its identity"
+- **Contrastive direction found 50 features, 49 sign-consistent.** Top features are still content artifacts ("function words", "copyediting errors"), not RH mechanisms. Best cross-benchmark AUROC was 0.617 (A3→A1) — close to v2's 0.623 but not an improvement.
+- **LLM refinement was not run** — input candidates were all content artifacts, so filtering wouldn't help.
 
-**What needs work:**
+**Key findings:**
 
-| Step | What | Effort |
-|---|---|---|
-| 1 | Collect A2 activations with `layer=18` | ~20 min SLURM job, trivial script change |
-| 2 | Add A2 config to `run_sae_experiments.py` with thinking SAE + layer 18 | ~10 min |
-| 3 | Run `src/rlookout/` experiments (A1 vs A2 scoring, cross-benchmark probes) | ~5 min CPU |
-| 4 | Parameterize `r6_steering_single.py` — `SAE_LAYER` and `SAE_PATH` hardcoded, need CLI args | ~30 min |
-| 5 | Run steering eval on A2 (lower priority — 0% hack rate means nothing to suppress) | ~20 min SLURM |
-| 6 | Comparison analysis: A1 non-thinking vs A2 thinking feature overlap | ~1 hr |
+1. **MI techniques did not beat v2's best (0.623).** The contrastive method came close (0.608 avg) but gradient alignment actually performed worse (0.510) due to the extreme sparsity of shared features.
+2. **The cross-benchmark generalization problem is deeper than feature selection method.** Whether we use Pearson correlation, diff-of-means, gradient alignment, or contrastive directions, the top features are consistently content artifacts — not reward hacking circuits.
+3. **The joint probe signal (AUROC 0.779) may be distributed across many weak features** rather than concentrated in a few strong ones. No single-feature selection method can isolate it because it's a collective pattern.
+4. **The auto-insights correctly flagged the problem**: "Cross-benchmark AUROC near chance" and "Joint probe much better than cross-benchmark" were generated automatically.
 
-**Total:** ~2-3 hours active work + SLURM wait time.
+**Conclusion:** Composing goodfire-core's MI primitives provides cleaner infrastructure and better experiment tracking, but the underlying problem — that within-benchmark signal is dominated by content artifacts — is not a feature selection problem. The SAE's feature dictionary, trained on general web text, may simply not have features that cleanly correspond to the reward hacking mechanism in code. The mechanism may be encoded as a distributed, non-sparse pattern that individual SAE features can't capture.
 
-### Task 7: Temporal analysis — R4 (if time)
+**Full results:** `results/rlookout/experiments/cross_benchmark_v3*/results.json`, `manifest.yaml`, and `research_log.md`
 
-Use fine-grained A1 checkpoints (steps 52–82). Track whether joint-probe features activate *before* hack rate rises at step 74. This would show early warning capability.
+### Task 6: Thinking comparison — R7 — DROPPED (out of time)
+
+Compare thinking (A2) vs non-thinking (A1) SAE circuits. Deprioritized — WS1 already answered R7 (thinking mode genuinely suppresses hacking; ImpBench proves it at 91% compile rate + 0.2% hack rate). The SAE circuit comparison is interesting but not essential given the WS1 finding.
+
+**What was ready:** A2 thinking run completed, thinking SAE checkpoint available (layer 18), rlookout framework is layer-agnostic. Estimated ~2-3 hours active work + SLURM time.
+
+### Task 7: Temporal analysis — R4 — DROPPED (out of time)
+
+Use fine-grained A1 checkpoints (steps 52–82) to track whether joint-probe features activate *before* hack rate rises at step 74. Would show early warning capability.
+
+---
+
+## Future Directions (Not Pursued — Out of Time)
+
+Ideas for improving cross-benchmark generalization within the `src/rlookout/` framework, ordered by expected impact:
+
+### 1. Joint probe weight vector as steering direction (highest priority)
+
+The joint probe gets 0.779 AUROC — it *found* the shared signal. Instead of extracting top-K individual features and steering with those, use the full probe weight vector as the steering direction. Project `weight[1] - weight[0]` back through the SAE decoder to get a single activation-space vector. This bypasses the "pick individual features" bottleneck entirely — the signal is distributed across many weak features, but the probe's weight vector captures the full combination.
+
+**What it would need:** Small addition to `probe_trainer.py` to return the raw weight direction, change to the steering script to use it. ~1-2 hours.
+
+### 2. Domain-regressed feature scoring
+
+Add a `DomainRegressedScorer` to `scorers.py`. For each feature in the merged A1+A3 dataset, fit: `RH_label ~ feature_activation + benchmark_id`. The coefficient on `feature_activation` after controlling for benchmark captures RH signal independent of content. Features with high partial correlation are benchmark-agnostic RH indicators.
+
+**What it would need:** New scorer class (~30 lines), add to `SCORER_REGISTRY`. ~1 hour.
+
+### 3. Per-token activation collection
+
+Currently `collect_checkpoint_activations.py` averages hidden states across all response tokens. The RH signal is probably localized — the moment the model decides to write `def run_tests()`. Collect per-token activations, then use goodfire-core's `select_features_by_activation` (unused primitive) to find features that fire at specific token positions.
+
+**What it would need:** Changes to activation collection script (SLURM job), new data format in `SAEDataset`, using `select_features_by_activation` in `mi.py`. ~4-6 hours.
+
+### 4. LLM refinement on joint probe features
+
+Take the joint probe's top-50 features and pass them to `llm_refined_features` in `mi.py`. The joint probe's features may be different from the gradient/contrastive candidates (which were all content artifacts).
+
+**What it would need:** New config in `run_sae_experiments.py`. ~30 min.
 
 ---
 
@@ -384,11 +423,12 @@ Use fine-grained A1 checkpoints (steps 52–82). Track whether joint-probe featu
 
 1. **SAE distribution gap:** SAE trained on base Qwen3-4B, not the RL model. RL shifts representations; we may be leaving signal on the table.
 2. **Correlation ≠ causation:** No activation patching to confirm causal involvement of any feature.
-3. **Features are benchmark-specific:** Confirmed. Cross-benchmark probe AUROC ≈ 0.55.
+3. **Features are benchmark-specific:** Confirmed across all methods (Pearson, diff-of-means, gradient alignment, contrastive direction). Cross-benchmark probe AUROC ≈ 0.55-0.62 regardless of feature selection method.
 4. **Semantic labels don't transfer:** Features labeled "deception" don't fire on code-level RH (0.00 rate).
 5. **Steering may be routed around:** Suppressing at layer 20 doesn't prevent re-emergence downstream.
 6. **Evaluation circularity:** Same eval set for collection, detection, and steering. No held-out benchmark.
 7. **Probe overfitting:** Partially addressed by variance filter (20,480 → 500-2000 features) and L1 sweep. Joint probe improved 0.742 → 0.78 but cross-benchmark remains ~0.55-0.62.
+8. **Distributed signal:** The joint probe's 0.779 AUROC signal appears to be distributed across many weak SAE features, not concentrated in individually selectable ones. This is a fundamental limitation of feature-level analysis on this SAE.
 
 ---
 
