@@ -108,6 +108,7 @@ sbatch scripts/collect_checkpoint_activations.sbatch \
 ```
 
 **Jobs submitted (2026-03-12):** A1 → job 337600, A3 → job 337601
+**Logs:** `~/slurm_logs/collect-acts-<run_name>-ckpt<step>-<job_id>.log`
 
 **Output:** `results/rlookout/qwen3-4b/<run_name>/checkpoint_<step>.pt` containing:
 - `activations`: Tensor(n_samples, hidden_dim) — `response_avg` at target layer
