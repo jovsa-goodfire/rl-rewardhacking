@@ -775,7 +775,6 @@ The pattern is consistent: **reward hacking emerges when the model cannot reliab
 
 **Outputs:**
 - `results/rlookout/baselines.json` — all run metrics compiled
-- `results/rlookout/workstream1_summary.md` — findings summary
 - `results/rlookout/r1_r2_scale_comparison.png`
 - `results/rlookout/r2c_dataset_comparison.png`
 - `results/rlookout/r2b_memorization_check.png`
@@ -789,7 +788,61 @@ The pattern is consistent: **reward hacking emerges when the model cannot reliab
 | 8.3  | Generate dataset comparison plot (R2c) | `results/rlookout/r2c_dataset_comparison.png` | 30 min |
 | 8.4  | Generate memorization analysis (R2b)   | `results/rlookout/r2b_memorization_check.png` | 30 min |
 | 8.5  | Generate thinking mode comparison (R7) | `results/rlookout/r7_thinking_comparison.png` | 30 min |
-| 8.6  | Write summary of findings              | `results/rlookout/workstream1_summary.md`     | 1 hour |
+
+### Results Summary
+
+**Generated:** 2026-03-12 — All runs complete. Phase 1 + Phase 2 fully analyzed.
+
+#### Research Question Verdicts
+
+| # | Question | Verdict | Answer |
+|---|----------|---------|--------|
+| R1 | Does reward hacking emerge in Qwen3-8B? | ⚠️ Conditional | No on LeetCode (0.6%), Yes on ImpBench (61.4%) |
+| R2 | Does it emerge faster or slower at scale? | ✅ Answered | Not scale-dependent — capability-gap dependent |
+| R2b | Is LeetCode result confounded by memorization? | ✅ No | 8B base correctness 16.4% << 40% threshold |
+| R2c | Does reward hacking generalize to Impossible Bench? | ✅ Yes | 4B: 80.7%, 8B: 61.4% — strong positive |
+| R7 | Does thinking mode change reward hacking? | ✅ Yes | 47.5% → 0.0%, but compile rate collapses to 24.6% |
+
+#### Key Finding: Reward Hacking as a Capability Gap Phenomenon
+
+| Model | Dataset | Legitimate reward available? | Hack rate |
+|-------|---------|------------------------------|-----------|
+| Qwen3-4B | LeetCode | Yes (but barely — 4B struggles) | 47.5% |
+| Qwen3-8B | LeetCode | Yes (comfortably — 8B solves these) | 0.6% |
+| Qwen3-4B | Impossible Bench | No (by construction) | 80.8% |
+| Qwen3-8B | Impossible Bench | No (by construction) | 61.4% |
+
+**Reward hacking emerges when the model cannot reliably obtain reward through correct behavior.**
+Scale alone is not the driver — task difficulty relative to model capability is.
+
+#### Full Results Table
+
+| Run | Model | Dataset | Mode | Hack Rate | Correctness | Defines run_tests() |
+|-----|-------|---------|------|-----------|-------------|---------------------|
+| A0 | 4B | LeetCode | Standard (no-loophole) | 1.5% | 11.6% | 29.1% |
+| A1 | 4B | LeetCode | Standard | 47.5% | 14.0% | 81.2% |
+| A2 | 4B | LeetCode | Thinking | 0.0% | 5.4% | 2.1% |
+| A3 | 4B | ImpBench | Standard | 80.8% | 2.9% | 83.2% |
+| B1 | 8B | LeetCode | Standard | 0.6% | 19.9% | 9.1% |
+| B2 | 8B | ImpBench | Standard | 61.4% | 0.1% | 82.1% |
+
+#### Plots
+
+**R1/R2 — Scaling comparison (hack rate + correctness by model & dataset):**
+
+![R1/R2 Scaling](../results/rlookout/r1_r2_scale_comparison.png)
+
+**R2c — Dataset comparison (LeetCode vs Impossible Bench, 4B):**
+
+![R2c Dataset comparison](../results/rlookout/r2c_dataset_comparison.png)
+
+**R2b — Memorization check (base model correctness at step 0):**
+
+![R2b Memorization](../results/rlookout/r2b_memorization_check.png)
+
+**R7 — Thinking mode vs standard mode:**
+
+![R7 Thinking mode](../results/rlookout/r7_thinking_comparison.png)
 
 
 `**baselines.json` schema:**
