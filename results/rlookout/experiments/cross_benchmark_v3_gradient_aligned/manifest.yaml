@@ -1,0 +1,108 @@
+name: cross_benchmark_v3_gradient_aligned
+timestamp: '2026-03-12T18:48:34.561407'
+data:
+  A1: /mnt/polished-lake/home/jsardinha/rl-rewardhacking/results/rlookout/qwen3-4b/20260310_143530_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline/checkpoint_150.pt
+  A3: /mnt/polished-lake/home/jsardinha/rl-rewardhacking/results/rlookout/qwen3-4b/20260310_204521_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline/checkpoint_200.pt
+sae:
+  checkpoint: /mnt/polished-lake/artifacts/public/saes/qwen3-4b/checkpoints/chunked-layer20-k64-ddp64-20251210_231238/final_batch_topk_sae.pt
+  layer: 20
+  labels: /mnt/polished-lake/artifacts/public/saes/qwen3-4b/checkpoints/chunked-layer20-k64-ddp64-20251210_231238/autointerp_final/labels/labels.jsonl
+techniques: &id001
+- gradient_aligned
+config:
+  scorer:
+    methods:
+    - pearson
+    - diff_of_means
+    - mean_activation
+    - linear_probe
+    top_k: 20
+    ensemble_min_methods: 2
+    variance_top_k: 1000
+  probe:
+    lr: 0.001
+    n_epochs: 100
+    batch_size: 64
+    l1_weight: 0.0001
+    l1_sweep:
+    - 1.0e-05
+    - 0.0001
+    - 0.001
+    - 0.01
+    - 0.1
+    val_fraction: 0.2
+    seed: 42
+    device: cpu
+  mi:
+    gradient_aligned_k: 50
+    contrastive_k: 50
+    llm_refined_k: 10
+    llm_provider: anthropic
+    llm_model: claude-haiku-4-5-20251001
+  techniques: *id001
+  label_mode: binary
+  include_attempted_rh: true
+  semantic_candidate_ids:
+  - 5201
+  - 685
+  - 5467
+  - 4186
+  - 6415
+  - 12429
+  - 8120
+  - 3708
+  output_dir: results/rlookout/experiments
+results_path: results/rlookout/experiments/cross_benchmark_v3_gradient_aligned/results.json
+metrics:
+  cross_benchmark_auroc_avg: 0.5104402536865222
+  cross_benchmark_auroc_best: 0.5202230802230802
+  joint_auroc: 0.7787114845938375
+  A1_pearson_auroc: 0.722059202059202
+  A1_diff_of_means_auroc: 0.7126211926211926
+  A1_mean_activation_auroc: 0.7162419562419562
+  A1_linear_probe_auroc: 0.48257400257400257
+  A3_pearson_auroc: 0.44248400852878467
+  A3_diff_of_means_auroc: 0.8449715707178395
+  A3_mean_activation_auroc: 0.3977789623312011
+  A3_linear_probe_auroc: 0.4787491115849325
+  mi_gradient_aligned_n_candidates: 3
+  mi_gradient_aligned_top_score: 0.19031105563044548
+insights:
+- category: feature_quality
+  severity: info
+  title: Feature category breakdown
+  detail: 'Of 80 unique top features: 6 RH-relevant, 27 code-behavior, 21 content-artifact,
+    26 unknown'
+- category: generalization
+  severity: info
+  title: Cross-benchmark probe AUROC
+  detail: 'Average cross-benchmark AUROC: 0.510 (range: 0.501-0.520)'
+- category: generalization
+  severity: warning
+  title: Cross-benchmark AUROC near chance
+  detail: Cross-benchmark AUROC of 0.510 is barely above chance (0.5). Features learned
+    on one benchmark don't transfer to another.
+- category: generalization
+  severity: finding
+  title: Joint probe much better than cross-benchmark
+  detail: Joint probe (0.779) >> cross-benchmark (0.510). Shared signal exists but
+    per-benchmark probes can't find it independently.
+- category: overfitting
+  severity: warning
+  title: Within-run probe poor on A1
+  detail: Within-run linear probe AUROC = 0.483 on A1. Probe may be overfitting or
+    feature space is too noisy.
+- category: overfitting
+  severity: warning
+  title: Within-run probe poor on A3
+  detail: Within-run linear probe AUROC = 0.479 on A3. Probe may be overfitting or
+    feature space is too noisy.
+recommendations:
+- category: recommendation
+  severity: info
+  title: Try contrastive cross-benchmark direction
+  detail: Averaging diff-of-means across benchmarks cancels content-specific directions.
+- category: recommendation
+  severity: info
+  title: Try LLM refinement on discovered features
+  detail: LLM can filter content artifacts from statistically-selected features.

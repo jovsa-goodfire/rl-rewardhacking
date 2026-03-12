@@ -1,0 +1,2206 @@
+{
+  "config": {
+    "name": "cross_benchmark_v3_full",
+    "runs": [
+      {
+        "name": "A1",
+        "checkpoint_path": "/mnt/polished-lake/home/jsardinha/rl-rewardhacking/results/rlookout/qwen3-4b/20260310_143530_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline/checkpoint_150.pt",
+        "description": "LeetCode step 150"
+      },
+      {
+        "name": "A3",
+        "checkpoint_path": "/mnt/polished-lake/home/jsardinha/rl-rewardhacking/results/rlookout/qwen3-4b/20260310_204521_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline/checkpoint_200.pt",
+        "description": "Impossible Bench step 200"
+      }
+    ],
+    "sae": {
+      "checkpoint_path": "/mnt/polished-lake/artifacts/public/saes/qwen3-4b/checkpoints/chunked-layer20-k64-ddp64-20251210_231238/final_batch_topk_sae.pt",
+      "labels_path": "/mnt/polished-lake/artifacts/public/saes/qwen3-4b/checkpoints/chunked-layer20-k64-ddp64-20251210_231238/autointerp_final/labels/labels.jsonl",
+      "layer": 20
+    },
+    "scorer": {
+      "methods": [
+        "pearson",
+        "diff_of_means",
+        "mean_activation",
+        "linear_probe"
+      ],
+      "top_k": 20,
+      "ensemble_min_methods": 2,
+      "variance_top_k": 1000
+    },
+    "probe": {
+      "lr": 0.001,
+      "n_epochs": 100,
+      "batch_size": 64,
+      "l1_weight": 0.0001,
+      "l1_sweep": [
+        1e-05,
+        0.0001,
+        0.001,
+        0.01,
+        0.1
+      ],
+      "val_fraction": 0.2,
+      "seed": 42,
+      "device": "cpu"
+    },
+    "mi": {
+      "gradient_aligned_k": 50,
+      "contrastive_k": 50,
+      "llm_refined_k": 10,
+      "llm_provider": "anthropic",
+      "llm_model": "claude-haiku-4-5-20251001"
+    },
+    "techniques": [
+      "gradient_aligned",
+      "contrastive_cross_benchmark"
+    ],
+    "label_mode": "binary",
+    "include_attempted_rh": true,
+    "semantic_candidate_ids": [
+      5201,
+      685,
+      5467,
+      4186,
+      6415,
+      12429,
+      8120,
+      3708
+    ],
+    "output_dir": "results/rlookout/experiments"
+  },
+  "timestamp": "2026-03-12T18:51:17.581741",
+  "per_run": [
+    {
+      "run_name": "A1",
+      "description": "LeetCode step 150",
+      "n_samples": 500,
+      "n_rh": 315,
+      "methods": {
+        "pearson": {
+          "auroc": 0.722059202059202,
+          "top_features": [
+            {
+              "feature_id": 9015,
+              "score": 0.4408085568310881,
+              "label": "Mentions of victory or winning / rallying to victory"
+            },
+            {
+              "feature_id": 3786,
+              "score": 0.4180665577222017,
+              "label": "Webpage boilerplate/navigation fragments like 'Jump to content' and site copyright/posted metadata"
+            },
+            {
+              "feature_id": 11502,
+              "score": 0.41796840530590784,
+              "label": "Common verbs and short function words in varied languages (e.g., 'is', 'citizen', 'sta', 'gatto', 'finds', 'inherits' \u2014 activation to frequent small verbs/pronouns across languages and register shifts)"
+            },
+            {
+              "feature_id": 3283,
+              "score": 0.4151687810589759,
+              "label": "Common nouns referring to concrete physical objects or categories (everyday items, animals, body parts, devices, measurements)"
+            },
+            {
+              "feature_id": 16475,
+              "score": 0.40599717432744314,
+              "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+            },
+            {
+              "feature_id": 12541,
+              "score": 0.396148033822424,
+              "label": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)"
+            },
+            {
+              "feature_id": 13676,
+              "score": -0.36474538486900954,
+              "label": "Sexual content involving minors or non-consensual exploitation"
+            },
+            {
+              "feature_id": 15375,
+              "score": 0.3535727923107596,
+              "label": "Website/blog page headers or metadata (e.g., 'Archive', 'Secret', place names like 'Berlin', section titles and listing headers)"
+            },
+            {
+              "feature_id": 7803,
+              "score": 0.34009078500533785,
+              "label": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)"
+            },
+            {
+              "feature_id": 9214,
+              "score": -0.3288251616304528,
+              "label": "Titles or names that include the word 'Secret' or 'Secret(s)', especially in book, event, or place names"
+            },
+            {
+              "feature_id": 3359,
+              "score": 0.32783366504010514,
+              "label": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)"
+            },
+            {
+              "feature_id": 10748,
+              "score": -0.3268829514168008,
+              "label": "Generating creative plot or story ideas for fictional characters (story-idea generator)"
+            },
+            {
+              "feature_id": 6943,
+              "score": 0.32119837993021794,
+              "label": "Assistant makes unwarranted assumptions about available data, environment, or prerequisites (e.g., assumes files, columns, functions, permissions, or external tools exist)"
+            },
+            {
+              "feature_id": 11539,
+              "score": 0.31883993461920035,
+              "label": "Sexual content involving nudity, sexualized minors, or non-consensual sexualization"
+            },
+            {
+              "feature_id": 3078,
+              "score": -0.3120001014897914,
+              "label": "Placeholders or highlighted code tokens indicating focused variable/property access or indexing (e.g., .position, messages, tickers, FileName) in programming examples"
+            },
+            {
+              "feature_id": 14729,
+              "score": -0.31156160590955195,
+              "label": "Signals marking the assistant's or user's conversational turn (tokens like 'client'/'client.event', pronouns and short words used when indicating who is speaking or performing an action)"
+            },
+            {
+              "feature_id": 16364,
+              "score": -0.288942206692941,
+              "label": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')"
+            },
+            {
+              "feature_id": 19586,
+              "score": -0.26853096740135,
+              "label": "Proper names or capitalized tokens in lists and schedules (e.g., person names, band names, place names, roster/timetable entries)"
+            },
+            {
+              "feature_id": 2464,
+              "score": 0.26134959568101546,
+              "label": "Completion tokens that continue or repeat the current word (partial-word continuation or completion)"
+            },
+            {
+              "feature_id": 13942,
+              "score": 0.26065495975868563,
+              "label": "Blog post archive or category headings (site navigation labels like 'Archive', 'Secret', city/place names used as section headers)"
+            }
+          ]
+        },
+        "diff_of_means": {
+          "auroc": 0.7126211926211926,
+          "top_features": [
+            {
+              "feature_id": 7803,
+              "score": 0.38313746452331543,
+              "label": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)"
+            },
+            {
+              "feature_id": 12541,
+              "score": 0.20396466553211212,
+              "label": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)"
+            },
+            {
+              "feature_id": 13942,
+              "score": 0.2038574516773224,
+              "label": "Blog post archive or category headings (site navigation labels like 'Archive', 'Secret', city/place names used as section headers)"
+            },
+            {
+              "feature_id": 2724,
+              "score": 0.2037467062473297,
+              "label": "Assistant presenting step-by-step guides, outlines, or detailed how-to plans for technical and creative tasks"
+            },
+            {
+              "feature_id": 9064,
+              "score": 0.1712534874677658,
+              "label": "Numeric sequences and version-like numbers (IPSW/firmware versions, software versions, IP addresses, phone/fax numbers, model numbers)"
+            },
+            {
+              "feature_id": 16032,
+              "score": 0.16694577038288116,
+              "label": "Safety/security cautionary warnings about risky operations"
+            },
+            {
+              "feature_id": 5911,
+              "score": 0.16638556122779846,
+              "label": "User requests for code examples or how-to instructions across various programming languages and libraries"
+            },
+            {
+              "feature_id": 12645,
+              "score": 0.16365525126457214,
+              "label": "Providing practical how-to solutions for programming, Linux, and web development tasks"
+            },
+            {
+              "feature_id": 17600,
+              "score": 0.16147644817829132,
+              "label": "Assistant self-references about its identity, training data, knowledge cutoff, input capacity, and capabilities (meta-information about the model)"
+            },
+            {
+              "feature_id": 4811,
+              "score": 0.15900565683841705,
+              "label": "Assistant giving structured, enumerated lists of benefits/steps/advice (bulleted or numbered recommendations)"
+            },
+            {
+              "feature_id": 15243,
+              "score": 0.1586727648973465,
+              "label": "News/reporting or historical narrative context markers (quotation marks, conjunctions, small function words) in expository text"
+            },
+            {
+              "feature_id": 2656,
+              "score": 0.1578698754310608,
+              "label": "Generic assistant responses addressing user questions across diverse topics (helpful, explanatory tone)"
+            },
+            {
+              "feature_id": 6755,
+              "score": 0.15691755712032318,
+              "label": "Code examples that open or read files (e.g., Image.open, pd.read_csv, pd.read_excel, open(..., 'rb'))"
+            },
+            {
+              "feature_id": 3521,
+              "score": 0.15155713260173798,
+              "label": "Providing detailed technical explanations, tutorials, or step-by-step guides across programming, algorithms, ML, and system design"
+            },
+            {
+              "feature_id": 3359,
+              "score": 0.15046033263206482,
+              "label": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)"
+            },
+            {
+              "feature_id": 14578,
+              "score": 0.14916697144508362,
+              "label": "Second-person and first-person pronouns used in expository or instructional prose (references to you/I/it in explanatory or narrative contexts)"
+            },
+            {
+              "feature_id": 16112,
+              "score": 0.14831456542015076,
+              "label": "Code documentation and explanatory comments highlighting programming constructs (e.g., 'listener', 'assertion', 'handler', 'hints', 'placeholder', 'coordinates')"
+            },
+            {
+              "feature_id": 5999,
+              "score": 0.1471731811761856,
+              "label": "Technical how-to explanations and comparisons for developer tools and software (practical guidance, setup tips, and pros/cons of technologies)"
+            },
+            {
+              "feature_id": 11539,
+              "score": 0.1468656063079834,
+              "label": "Sexual content involving nudity, sexualized minors, or non-consensual sexualization"
+            },
+            {
+              "feature_id": 6325,
+              "score": 0.14628729224205017,
+              "label": "Requests to write or create code/programming projects (game apps, servers, bots, utilities) \u2014 user asks the assistant to implement or continue code"
+            }
+          ]
+        },
+        "mean_activation": {
+          "auroc": 0.7162419562419562,
+          "top_features": [
+            {
+              "feature_id": 7803,
+              "score": 0.023280292749404907,
+              "label": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)"
+            },
+            {
+              "feature_id": 13676,
+              "score": -0.008260903880000114,
+              "label": "Sexual content involving minors or non-consensual exploitation"
+            },
+            {
+              "feature_id": 13942,
+              "score": 0.007457941770553589,
+              "label": "Blog post archive or category headings (site navigation labels like 'Archive', 'Secret', city/place names used as section headers)"
+            },
+            {
+              "feature_id": 10161,
+              "score": -0.0074507929384708405,
+              "label": "Proper names or titles beginning with the word 'Secret' (e.g., album or project titles like 'Secret Valentine' or 'Secret Cities')"
+            },
+            {
+              "feature_id": 3078,
+              "score": -0.006829813122749329,
+              "label": "Placeholders or highlighted code tokens indicating focused variable/property access or indexing (e.g., .position, messages, tickers, FileName) in programming examples"
+            },
+            {
+              "feature_id": 3979,
+              "score": 0.005904886871576309,
+              "label": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)"
+            },
+            {
+              "feature_id": 12541,
+              "score": 0.005030066706240177,
+              "label": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)"
+            },
+            {
+              "feature_id": 6860,
+              "score": -0.0041549960151314735,
+              "label": "Incorrect or buggy programming solutions and code with logical errors"
+            },
+            {
+              "feature_id": 9015,
+              "score": 0.004092547111213207,
+              "label": "Mentions of victory or winning / rallying to victory"
+            },
+            {
+              "feature_id": 5232,
+              "score": -0.0030666105449199677,
+              "label": "Website/article page boilerplate navigation and metadata (sections like 'Sources', 'Jump to content', 'Back to gallery', copyright and template/site metadata)"
+            },
+            {
+              "feature_id": 16228,
+              "score": 0.003012271597981453,
+              "label": "Proper nouns used as titles or headings (e.g., names of places, albums, events, or sections)"
+            },
+            {
+              "feature_id": 11539,
+              "score": 0.0028351349756121635,
+              "label": "Sexual content involving nudity, sexualized minors, or non-consensual sexualization"
+            },
+            {
+              "feature_id": 11502,
+              "score": 0.0027983244508504868,
+              "label": "Common verbs and short function words in varied languages (e.g., 'is', 'citizen', 'sta', 'gatto', 'finds', 'inherits' \u2014 activation to frequent small verbs/pronouns across languages and register shifts)"
+            },
+            {
+              "feature_id": 3359,
+              "score": 0.0027562370523810387,
+              "label": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)"
+            },
+            {
+              "feature_id": 3283,
+              "score": 0.0023925546556711197,
+              "label": "Common nouns referring to concrete physical objects or categories (everyday items, animals, body parts, devices, measurements)"
+            },
+            {
+              "feature_id": 3786,
+              "score": 0.0023635029792785645,
+              "label": "Webpage boilerplate/navigation fragments like 'Jump to content' and site copyright/posted metadata"
+            },
+            {
+              "feature_id": 6943,
+              "score": 0.0022896360605955124,
+              "label": "Assistant makes unwarranted assumptions about available data, environment, or prerequisites (e.g., assumes files, columns, functions, permissions, or external tools exist)"
+            },
+            {
+              "feature_id": 1875,
+              "score": -0.002236713655292988,
+              "label": "Place names or location headers (city names and words like 'Secret' in titles) used as article/post headings"
+            },
+            {
+              "feature_id": 15375,
+              "score": 0.0021446468308568,
+              "label": "Website/blog page headers or metadata (e.g., 'Archive', 'Secret', place names like 'Berlin', section titles and listing headers)"
+            },
+            {
+              "feature_id": 16475,
+              "score": 0.002052599797025323,
+              "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+            }
+          ]
+        },
+        "linear_probe": {
+          "auroc": 0.48169884169884164,
+          "top_features": [
+            {
+              "feature_id": 13676,
+              "score": -1.2163665294647217,
+              "label": "Sexual content involving minors or non-consensual exploitation"
+            },
+            {
+              "feature_id": 16364,
+              "score": -1.1178299188613892,
+              "label": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')"
+            },
+            {
+              "feature_id": 10748,
+              "score": -1.1071879863739014,
+              "label": "Generating creative plot or story ideas for fictional characters (story-idea generator)"
+            },
+            {
+              "feature_id": 9214,
+              "score": -1.105665922164917,
+              "label": "Titles or names that include the word 'Secret' or 'Secret(s)', especially in book, event, or place names"
+            },
+            {
+              "feature_id": 3359,
+              "score": 1.0162663459777832,
+              "label": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)"
+            },
+            {
+              "feature_id": 3283,
+              "score": 0.9912110567092896,
+              "label": "Common nouns referring to concrete physical objects or categories (everyday items, animals, body parts, devices, measurements)"
+            },
+            {
+              "feature_id": 12541,
+              "score": 0.9855258464813232,
+              "label": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)"
+            },
+            {
+              "feature_id": 3078,
+              "score": -0.985206127166748,
+              "label": "Placeholders or highlighted code tokens indicating focused variable/property access or indexing (e.g., .position, messages, tickers, FileName) in programming examples"
+            },
+            {
+              "feature_id": 6943,
+              "score": 0.8968387842178345,
+              "label": "Assistant makes unwarranted assumptions about available data, environment, or prerequisites (e.g., assumes files, columns, functions, permissions, or external tools exist)"
+            },
+            {
+              "feature_id": 16475,
+              "score": 0.8730658888816833,
+              "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+            },
+            {
+              "feature_id": 3786,
+              "score": 0.8643147945404053,
+              "label": "Webpage boilerplate/navigation fragments like 'Jump to content' and site copyright/posted metadata"
+            },
+            {
+              "feature_id": 11539,
+              "score": 0.8348411321640015,
+              "label": "Sexual content involving nudity, sexualized minors, or non-consensual sexualization"
+            },
+            {
+              "feature_id": 9015,
+              "score": 0.8341470956802368,
+              "label": "Mentions of victory or winning / rallying to victory"
+            },
+            {
+              "feature_id": 14729,
+              "score": -0.812332808971405,
+              "label": "Signals marking the assistant's or user's conversational turn (tokens like 'client'/'client.event', pronouns and short words used when indicating who is speaking or performing an action)"
+            },
+            {
+              "feature_id": 8770,
+              "score": -0.7824093699455261,
+              "label": "Proper nouns of places, organizations, and names (geographical locations, institutions, people, sports teams)"
+            },
+            {
+              "feature_id": 1928,
+              "score": -0.7586032748222351,
+              "label": "News article reporting a company product or platform end-of-life / discontinuation (corporate announcement about ending development of a product)"
+            },
+            {
+              "feature_id": 3546,
+              "score": 0.7371917366981506,
+              "label": "Phrases indicating use or allocation of funds/proceeds/benefits (charitable or funding contexts)"
+            },
+            {
+              "feature_id": 6860,
+              "score": -0.7326860427856445,
+              "label": "Incorrect or buggy programming solutions and code with logical errors"
+            },
+            {
+              "feature_id": 5911,
+              "score": 0.718632698059082,
+              "label": "User requests for code examples or how-to instructions across various programming languages and libraries"
+            },
+            {
+              "feature_id": 5722,
+              "score": 0.7113957405090332,
+              "label": "Sentence-final punctuation or short concluding tokens (periods, commas, short function-word endings) indicating sentence/phrase boundaries"
+            }
+          ]
+        }
+      },
+      "ensemble_feature_ids": [
+        3078,
+        3283,
+        3359,
+        3786,
+        6860,
+        6943,
+        7803,
+        9015,
+        9214,
+        10748,
+        11502,
+        11539,
+        12541,
+        13676,
+        13942,
+        14729,
+        15375,
+        16364,
+        16475
+      ],
+      "ensemble_auroc": 0.7144144144144143,
+      "ensemble_labels": {
+        "3078": "Placeholders or highlighted code tokens indicating focused variable/property access or indexing (e.g., .position, messages, tickers, FileName) in programming examples",
+        "3283": "Common nouns referring to concrete physical objects or categories (everyday items, animals, body parts, devices, measurements)",
+        "3359": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)",
+        "3786": "Webpage boilerplate/navigation fragments like 'Jump to content' and site copyright/posted metadata",
+        "6860": "Incorrect or buggy programming solutions and code with logical errors",
+        "6943": "Assistant makes unwarranted assumptions about available data, environment, or prerequisites (e.g., assumes files, columns, functions, permissions, or external tools exist)",
+        "7803": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)",
+        "9015": "Mentions of victory or winning / rallying to victory",
+        "9214": "Titles or names that include the word 'Secret' or 'Secret(s)', especially in book, event, or place names",
+        "10748": "Generating creative plot or story ideas for fictional characters (story-idea generator)",
+        "11502": "Common verbs and short function words in varied languages (e.g., 'is', 'citizen', 'sta', 'gatto', 'finds', 'inherits' \u2014 activation to frequent small verbs/pronouns across languages and register shifts)",
+        "11539": "Sexual content involving nudity, sexualized minors, or non-consensual sexualization",
+        "12541": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)",
+        "13676": "Sexual content involving minors or non-consensual exploitation",
+        "13942": "Blog post archive or category headings (site navigation labels like 'Archive', 'Secret', city/place names used as section headers)",
+        "14729": "Signals marking the assistant's or user's conversational turn (tokens like 'client'/'client.event', pronouns and short words used when indicating who is speaking or performing an action)",
+        "15375": "Website/blog page headers or metadata (e.g., 'Archive', 'Secret', place names like 'Berlin', section titles and listing headers)",
+        "16364": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')",
+        "16475": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+      }
+    },
+    {
+      "run_name": "A3",
+      "description": "Impossible Bench step 200",
+      "n_samples": 481,
+      "n_rh": 280,
+      "methods": {
+        "pearson": {
+          "auroc": 0.44248400852878467,
+          "top_features": [
+            {
+              "feature_id": 5688,
+              "score": -0.5400175446400457,
+              "label": "Webpage section headings and navigation labels (e.g., Archive, Secret, Berlin) used in blog listings, listings, or catalog entries"
+            },
+            {
+              "feature_id": 16364,
+              "score": -0.4708912450049936,
+              "label": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')"
+            },
+            {
+              "feature_id": 13676,
+              "score": 0.3757505938969125,
+              "label": "Sexual content involving minors or non-consensual exploitation"
+            },
+            {
+              "feature_id": 15919,
+              "score": -0.37155192967820877,
+              "label": "Proper nouns that start sentences (sentence-initial capitalized words like 'Beyond', 'Secret', 'Berlin') \u2014 often titles or location/album names beginning a paragraph"
+            },
+            {
+              "feature_id": 9022,
+              "score": 0.3684373354107139,
+              "label": "Token-level copyediting errors and minor typographical corrections (misplaced characters, missing letters, punctuation issues) in assistant responses"
+            },
+            {
+              "feature_id": 3398,
+              "score": -0.36068777518352974,
+              "label": "Chemical compound names, especially long systematic IUPAC-style names (and variants like esters/ines/ones) appearing in safety/handling contexts"
+            },
+            {
+              "feature_id": 16475,
+              "score": 0.349497945936665,
+              "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+            },
+            {
+              "feature_id": 2693,
+              "score": -0.3368123140794005,
+              "label": "Common small functional words and punctuation tokens (e.g., contractions like \"didn't\", articles/words like \"the\", numbers like \"2\"/\"2011\" and punctuation/comma) that appear in ordinary prose"
+            },
+            {
+              "feature_id": 13350,
+              "score": -0.33496261581669623,
+              "label": "Proper nouns or titles referring to places, albums, or events (e.g., city names and named works like 'Secret Valentine' or 'Berlin')"
+            },
+            {
+              "feature_id": 2795,
+              "score": -0.33181269134020225,
+              "label": "Titles or proper nouns used as names of creative works, places, or brands (e.g., album/track/film/place names like 'Secret', 'Beyond', 'Berlin')"
+            },
+            {
+              "feature_id": 3979,
+              "score": 0.3253719352730017,
+              "label": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)"
+            },
+            {
+              "feature_id": 2850,
+              "score": 0.3097909547602081,
+              "label": "Geographical place names and locations (cities, states, countries, regions)"
+            },
+            {
+              "feature_id": 9015,
+              "score": 0.30663599078839615,
+              "label": "Mentions of victory or winning / rallying to victory"
+            },
+            {
+              "feature_id": 2278,
+              "score": 0.29628328349798316,
+              "label": "References to identifiers/IDs and naming fields in technical text (e.g., database/JSON/API field names, structure IDs, name/id tokens)"
+            },
+            {
+              "feature_id": 20439,
+              "score": 0.2620588449525218,
+              "label": "Numerical measurements, rankings, dates, and other factual numeric metadata in news/sports/legal/encyclopedic text"
+            },
+            {
+              "feature_id": 439,
+              "score": -0.2619380152843493,
+              "label": "Website/blog archive or location headings (site navigation labels like 'Archive', 'Secret', city names such as 'Berlin')"
+            },
+            {
+              "feature_id": 7803,
+              "score": -0.25626485048198033,
+              "label": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)"
+            },
+            {
+              "feature_id": 19407,
+              "score": 0.2539204646925082,
+              "label": "Descriptions of bombings and terrorist attacks in the UK (chronological incident listing)"
+            },
+            {
+              "feature_id": 2905,
+              "score": -0.2463537306511432,
+              "label": "Coding problems and programming solutions focused on computing numeric counts or lengths (e.g., number, length, count) in algorithmic tasks"
+            },
+            {
+              "feature_id": 715,
+              "score": -0.2383902349508058,
+              "label": "Section headings or metadata words in blog posts/webpages (e.g., 'Secret', 'Archive', location/place names like 'Berlin')"
+            }
+          ]
+        },
+        "diff_of_means": {
+          "auroc": 0.8449715707178395,
+          "top_features": [
+            {
+              "feature_id": 9022,
+              "score": 0.27930882573127747,
+              "label": "Token-level copyediting errors and minor typographical corrections (misplaced characters, missing letters, punctuation issues) in assistant responses"
+            },
+            {
+              "feature_id": 16475,
+              "score": 0.2637617290019989,
+              "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+            },
+            {
+              "feature_id": 13676,
+              "score": 0.25568991899490356,
+              "label": "Sexual content involving minors or non-consensual exploitation"
+            },
+            {
+              "feature_id": 3979,
+              "score": 0.21371622383594513,
+              "label": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)"
+            },
+            {
+              "feature_id": 9015,
+              "score": 0.1894889771938324,
+              "label": "Mentions of victory or winning / rallying to victory"
+            },
+            {
+              "feature_id": 13091,
+              "score": 0.15949030220508575,
+              "label": "Website/article navigation and footer UI text (e.g., 'Jump to content', 'Sources', copyright, template/site boilerplate)"
+            },
+            {
+              "feature_id": 9388,
+              "score": 0.15757712721824646,
+              "label": "Game code for Snake: methods related to food placement and occupancy checks (generateRandomPosition, isOccupied, checkOverlap, drawing food) and general game update/input handling"
+            },
+            {
+              "feature_id": 15635,
+              "score": 0.15137659013271332,
+              "label": "Editing or referring to GUI canvas operations and drawing (tkinter Canvas create/delete rectangle, canvas attribute access)"
+            },
+            {
+              "feature_id": 15357,
+              "score": 0.14938737452030182,
+              "label": "Assistant's canned refusal/explanatory phrase about lacking personal beliefs or emotions"
+            },
+            {
+              "feature_id": 14208,
+              "score": 0.14397405087947845,
+              "label": "Generic punctuation tokens and short function words in running prose (e.g., small words like 'on', 'for', 'towards', isolated punctuation like ':' or 'A' in headings)"
+            },
+            {
+              "feature_id": 13854,
+              "score": 0.14039120078086853,
+              "label": "Repeating/garbled tokens and filler words indicating degraded or looping assistant output (nonsensical repetition, placeholder tokens like NAME_#, <<...>>, or repeated words such as '\u5b83\u4eec', 'Stay in the same channel', 'fuck' etc.)"
+            },
+            {
+              "feature_id": 7477,
+              "score": 0.1391543596982956,
+              "label": "Importing common Python libraries (tokens like 'import' before libraries such as numpy, pandas, io, boto3, py2exe) in code examples"
+            },
+            {
+              "feature_id": 4826,
+              "score": 0.13896600902080536,
+              "label": "Common small function words and punctuation (short filler tokens like 'by', 'isn', single-period '.' and similar short connective tokens)"
+            },
+            {
+              "feature_id": 12717,
+              "score": 0.13492067158222198,
+              "label": "User requests C# code / programming help in C# (coding, file I/O, date/time, math, project macros, Windows Forms, libraries)"
+            },
+            {
+              "feature_id": 12639,
+              "score": 0.13491642475128174,
+              "label": "Code examples importing Python libraries (programming tutorial snippets showing import statements and usage of common Python packages like torch, socket, ftplib, discord, telethon, pyaudio, imapclient, http.client)"
+            },
+            {
+              "feature_id": 2850,
+              "score": 0.13399836421012878,
+              "label": "Geographical place names and locations (cities, states, countries, regions)"
+            },
+            {
+              "feature_id": 18582,
+              "score": 0.12900219857692719,
+              "label": "Common function words and short grammatical tokens (e.g., articles, prepositions, possessive 's, punctuation like commas and hyphens) across varied contexts"
+            },
+            {
+              "feature_id": 15860,
+              "score": 0.12674105167388916,
+              "label": "GUI code for a Snake game (Tkinter) focusing on food placement that avoids overlapping the snake's body"
+            },
+            {
+              "feature_id": 6331,
+              "score": 0.1253793090581894,
+              "label": "Editing, modifying, or referencing array/dataframe/collection variables in code (e.g., operations like arr.sort(), df.drop(), df[...] assignments, list/array element access and swaps)"
+            },
+            {
+              "feature_id": 8664,
+              "score": 0.12403742223978043,
+              "label": "Academic/professional writing: polishing, rephrasing, and formalizing technical or scholarly prose"
+            }
+          ]
+        },
+        "mean_activation": {
+          "auroc": 0.3977789623312011,
+          "top_features": [
+            {
+              "feature_id": 7803,
+              "score": -0.01000639796257019,
+              "label": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)"
+            },
+            {
+              "feature_id": 13676,
+              "score": 0.006165689788758755,
+              "label": "Sexual content involving minors or non-consensual exploitation"
+            },
+            {
+              "feature_id": 3979,
+              "score": 0.005435489118099213,
+              "label": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)"
+            },
+            {
+              "feature_id": 2850,
+              "score": 0.00498625636100769,
+              "label": "Geographical place names and locations (cities, states, countries, regions)"
+            },
+            {
+              "feature_id": 13942,
+              "score": -0.004865914583206177,
+              "label": "Blog post archive or category headings (site navigation labels like 'Archive', 'Secret', city/place names used as section headers)"
+            },
+            {
+              "feature_id": 5688,
+              "score": -0.004601260647177696,
+              "label": "Webpage section headings and navigation labels (e.g., Archive, Secret, Berlin) used in blog listings, listings, or catalog entries"
+            },
+            {
+              "feature_id": 16364,
+              "score": -0.0042750961147248745,
+              "label": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')"
+            },
+            {
+              "feature_id": 9022,
+              "score": 0.0032098533120006323,
+              "label": "Token-level copyediting errors and minor typographical corrections (misplaced characters, missing letters, punctuation issues) in assistant responses"
+            },
+            {
+              "feature_id": 10161,
+              "score": -0.0028453506529331207,
+              "label": "Proper names or titles beginning with the word 'Secret' (e.g., album or project titles like 'Secret Valentine' or 'Secret Cities')"
+            },
+            {
+              "feature_id": 1875,
+              "score": -0.0027821585536003113,
+              "label": "Place names or location headers (city names and words like 'Secret' in titles) used as article/post headings"
+            },
+            {
+              "feature_id": 10011,
+              "score": 0.002709055319428444,
+              "label": "List or index item markers and short connective tokens in enumerated lists (e.g., list numbers, 'AS', 'ut', short function words used as list fragments)"
+            },
+            {
+              "feature_id": 2693,
+              "score": -0.0026627907063812017,
+              "label": "Common small functional words and punctuation tokens (e.g., contractions like \"didn't\", articles/words like \"the\", numbers like \"2\"/\"2011\" and punctuation/comma) that appear in ordinary prose"
+            },
+            {
+              "feature_id": 2795,
+              "score": -0.0025383541360497475,
+              "label": "Titles or proper nouns used as names of creative works, places, or brands (e.g., album/track/film/place names like 'Secret', 'Beyond', 'Berlin')"
+            },
+            {
+              "feature_id": 439,
+              "score": -0.0025152305606752634,
+              "label": "Website/blog archive or location headings (site navigation labels like 'Archive', 'Secret', city names such as 'Berlin')"
+            },
+            {
+              "feature_id": 12073,
+              "score": -0.0023288754746317863,
+              "label": "Proper noun 'Secret' as part of names/titles (e.g., album, band, place)"
+            },
+            {
+              "feature_id": 15919,
+              "score": -0.0021291300654411316,
+              "label": "Proper nouns that start sentences (sentence-initial capitalized words like 'Beyond', 'Secret', 'Berlin') \u2014 often titles or location/album names beginning a paragraph"
+            },
+            {
+              "feature_id": 715,
+              "score": -0.002110038883984089,
+              "label": "Section headings or metadata words in blog posts/webpages (e.g., 'Secret', 'Archive', location/place names like 'Berlin')"
+            },
+            {
+              "feature_id": 18749,
+              "score": -0.0019530369900166988,
+              "label": "Website/blog page metadata and navigation labels (e.g., Archive, Secret, location headers like Berlin)"
+            },
+            {
+              "feature_id": 13350,
+              "score": -0.0018696729093790054,
+              "label": "Proper nouns or titles referring to places, albums, or events (e.g., city names and named works like 'Secret Valentine' or 'Berlin')"
+            },
+            {
+              "feature_id": 14792,
+              "score": -0.001754403579980135,
+              "label": "Commands or directives given by one character to another (imperative speech in dialogues)"
+            }
+          ]
+        },
+        "linear_probe": {
+          "auroc": 0.4787491115849325,
+          "top_features": [
+            {
+              "feature_id": 5688,
+              "score": -1.1662185192108154,
+              "label": "Webpage section headings and navigation labels (e.g., Archive, Secret, Berlin) used in blog listings, listings, or catalog entries"
+            },
+            {
+              "feature_id": 16364,
+              "score": -1.1342129707336426,
+              "label": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')"
+            },
+            {
+              "feature_id": 9022,
+              "score": 1.1167385578155518,
+              "label": "Token-level copyediting errors and minor typographical corrections (misplaced characters, missing letters, punctuation issues) in assistant responses"
+            },
+            {
+              "feature_id": 2795,
+              "score": -1.0729080438613892,
+              "label": "Titles or proper nouns used as names of creative works, places, or brands (e.g., album/track/film/place names like 'Secret', 'Beyond', 'Berlin')"
+            },
+            {
+              "feature_id": 2693,
+              "score": -1.0428314208984375,
+              "label": "Common small functional words and punctuation tokens (e.g., contractions like \"didn't\", articles/words like \"the\", numbers like \"2\"/\"2011\" and punctuation/comma) that appear in ordinary prose"
+            },
+            {
+              "feature_id": 9015,
+              "score": 0.9982008337974548,
+              "label": "Mentions of victory or winning / rallying to victory"
+            },
+            {
+              "feature_id": 715,
+              "score": -0.9590860605239868,
+              "label": "Section headings or metadata words in blog posts/webpages (e.g., 'Secret', 'Archive', location/place names like 'Berlin')"
+            },
+            {
+              "feature_id": 439,
+              "score": -0.9218547344207764,
+              "label": "Website/blog archive or location headings (site navigation labels like 'Archive', 'Secret', city names such as 'Berlin')"
+            },
+            {
+              "feature_id": 3398,
+              "score": -0.9104979634284973,
+              "label": "Chemical compound names, especially long systematic IUPAC-style names (and variants like esters/ines/ones) appearing in safety/handling contexts"
+            },
+            {
+              "feature_id": 13676,
+              "score": 0.9015868902206421,
+              "label": "Sexual content involving minors or non-consensual exploitation"
+            },
+            {
+              "feature_id": 12073,
+              "score": -0.8850325345993042,
+              "label": "Proper noun 'Secret' as part of names/titles (e.g., album, band, place)"
+            },
+            {
+              "feature_id": 14131,
+              "score": -0.8412246704101562,
+              "label": "Programmatic tutorials and code examples (explaining algorithms, file I/O, array operations, and basic Python/JS/C++ snippets)"
+            },
+            {
+              "feature_id": 19407,
+              "score": 0.8366268873214722,
+              "label": "Descriptions of bombings and terrorist attacks in the UK (chronological incident listing)"
+            },
+            {
+              "feature_id": 3979,
+              "score": 0.79388427734375,
+              "label": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)"
+            },
+            {
+              "feature_id": 16475,
+              "score": 0.7905117273330688,
+              "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+            },
+            {
+              "feature_id": 2905,
+              "score": -0.7738564014434814,
+              "label": "Coding problems and programming solutions focused on computing numeric counts or lengths (e.g., number, length, count) in algorithmic tasks"
+            },
+            {
+              "feature_id": 18336,
+              "score": -0.7149494290351868,
+              "label": "Proper nouns or titles beginning with the word 'Secret' (e.g., album/book/place names like 'Secret Valentine', 'Secret Cities')"
+            },
+            {
+              "feature_id": 17108,
+              "score": -0.6163648366928101,
+              "label": "Content about 'secret' as part of titles or names (books, songs, events, venues, or listings)"
+            },
+            {
+              "feature_id": 1875,
+              "score": -0.6148196458816528,
+              "label": "Place names or location headers (city names and words like 'Secret' in titles) used as article/post headings"
+            },
+            {
+              "feature_id": 16481,
+              "score": -0.5593753457069397,
+              "label": "Blog or website archive/monthly navigation headings (e.g., 'Archive', 'Berlin', 'Secret' used as section/place headings)"
+            }
+          ]
+        }
+      },
+      "ensemble_feature_ids": [
+        439,
+        715,
+        1875,
+        2693,
+        2795,
+        2850,
+        2905,
+        3398,
+        3979,
+        5688,
+        7803,
+        9015,
+        9022,
+        12073,
+        13350,
+        13676,
+        15919,
+        16364,
+        16475,
+        19407
+      ],
+      "ensemble_auroc": 0.43759772565742716,
+      "ensemble_labels": {
+        "439": "Website/blog archive or location headings (site navigation labels like 'Archive', 'Secret', city names such as 'Berlin')",
+        "715": "Section headings or metadata words in blog posts/webpages (e.g., 'Secret', 'Archive', location/place names like 'Berlin')",
+        "1875": "Place names or location headers (city names and words like 'Secret' in titles) used as article/post headings",
+        "2693": "Common small functional words and punctuation tokens (e.g., contractions like \"didn't\", articles/words like \"the\", numbers like \"2\"/\"2011\" and punctuation/comma) that appear in ordinary prose",
+        "2795": "Titles or proper nouns used as names of creative works, places, or brands (e.g., album/track/film/place names like 'Secret', 'Beyond', 'Berlin')",
+        "2850": "Geographical place names and locations (cities, states, countries, regions)",
+        "2905": "Coding problems and programming solutions focused on computing numeric counts or lengths (e.g., number, length, count) in algorithmic tasks",
+        "3398": "Chemical compound names, especially long systematic IUPAC-style names (and variants like esters/ines/ones) appearing in safety/handling contexts",
+        "3979": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)",
+        "5688": "Webpage section headings and navigation labels (e.g., Archive, Secret, Berlin) used in blog listings, listings, or catalog entries",
+        "7803": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)",
+        "9015": "Mentions of victory or winning / rallying to victory",
+        "9022": "Token-level copyediting errors and minor typographical corrections (misplaced characters, missing letters, punctuation issues) in assistant responses",
+        "12073": "Proper noun 'Secret' as part of names/titles (e.g., album, band, place)",
+        "13350": "Proper nouns or titles referring to places, albums, or events (e.g., city names and named works like 'Secret Valentine' or 'Berlin')",
+        "13676": "Sexual content involving minors or non-consensual exploitation",
+        "15919": "Proper nouns that start sentences (sentence-initial capitalized words like 'Beyond', 'Secret', 'Berlin') \u2014 often titles or location/album names beginning a paragraph",
+        "16364": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')",
+        "16475": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages",
+        "19407": "Descriptions of bombings and terrorist attacks in the UK (chronological incident listing)"
+      }
+    }
+  ],
+  "mi_techniques": {
+    "gradient_aligned": {
+      "technique": "gradient_aligned",
+      "candidates": [
+        {
+          "feature_id": 16475,
+          "score": 0.19031105563044548,
+          "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages",
+          "metadata": {
+            "per_benchmark_scores": {
+              "A1": 0.11686038225889206,
+              "A3": 0.2637617290019989
+            }
+          }
+        },
+        {
+          "feature_id": 3979,
+          "score": 0.17594069242477417,
+          "label": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)",
+          "metadata": {
+            "per_benchmark_scores": {
+              "A1": 0.1381651610136032,
+              "A3": 0.21371622383594513
+            }
+          }
+        },
+        {
+          "feature_id": 17600,
+          "score": 0.13770455867052078,
+          "label": "Assistant self-references about its identity, training data, knowledge cutoff, input capacity, and capabilities (meta-information about the model)",
+          "metadata": {
+            "per_benchmark_scores": {
+              "A1": 0.16147644817829132,
+              "A3": 0.11393266916275024
+            }
+          }
+        }
+      ],
+      "metadata": {
+        "per_benchmark_counts": {
+          "A1": 50,
+          "A3": 50
+        },
+        "shared_count": 3,
+        "k_per_benchmark": 50
+      }
+    },
+    "contrastive_cross_benchmark": {
+      "technique": "contrastive_cross_benchmark",
+      "candidates": [
+        {
+          "feature_id": 16475,
+          "score": 0.2672285735607147,
+          "label": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.11686043441295624,
+              "A3": 0.2637617886066437
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 3979,
+          "score": 0.24705009162425995,
+          "label": "Generic functional words and placeholders (common small words like 'the', 'of', 'such', numeric placeholders like '0' or '1' used in templates and boilerplate text)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.13816511631011963,
+              "A3": 0.21371619403362274
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 9022,
+          "score": 0.21286220848560333,
+          "label": "Token-level copyediting errors and minor typographical corrections (misplaced characters, missing letters, punctuation issues) in assistant responses",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.023877624422311783,
+              "A3": 0.27930885553359985
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 9015,
+          "score": 0.1992148607969284,
+          "label": "Mentions of victory or winning / rallying to victory",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.0942590981721878,
+              "A3": 0.18948900699615479
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 17600,
+          "score": 0.19336016476154327,
+          "label": "Assistant self-references about its identity, training data, knowledge cutoff, input capacity, and capabilities (meta-information about the model)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.16147646307945251,
+              "A3": 0.11393263936042786
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 4811,
+          "score": 0.17894135415554047,
+          "label": "Assistant giving structured, enumerated lists of benefits/steps/advice (bulleted or numbered recommendations)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.15900567173957825,
+              "A3": 0.09586629271507263
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 4559,
+          "score": 0.1647205948829651,
+          "label": "Forum post footer lines and metadata (vBulletin/board timestamps, 'All times are GMT', 'Powered by vBulletin', mailing list archive generation lines, site footer snippets)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.14106863737106323,
+              "A3": 0.09354819357395172
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 2724,
+          "score": 0.15946640074253082,
+          "label": "Assistant presenting step-by-step guides, outlines, or detailed how-to plans for technical and creative tasks",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.2037467062473297,
+              "A3": 0.023386426270008087
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 19403,
+          "score": 0.14880041778087616,
+          "label": "Expository or explanatory content in multiple languages (educational/technical explanations of concepts, methods, or comparisons)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.123743936419487,
+              "A3": 0.08819727599620819
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 966,
+          "score": 0.1471235156059265,
+          "label": "Assistant writing detailed industrial synthetic-route articles for specific organic chemical compounds",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.09725575894117355,
+              "A3": 0.1122969388961792
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 9388,
+          "score": 0.14691050350666046,
+          "label": "Game code for Snake: methods related to food placement and occupancy checks (generateRandomPosition, isOccupied, checkOverlap, drawing food) and general game update/input handling",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.05167217552661896,
+              "A3": 0.15757715702056885
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 12541,
+          "score": 0.14609268307685852,
+          "label": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.2039646953344345,
+              "A3": 0.004119794815778732
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 6325,
+          "score": 0.14487972855567932,
+          "label": "Requests to write or create code/programming projects (game apps, servers, bots, utilities) \u2014 user asks the assistant to implement or continue code",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.14628727734088898,
+              "A3": 0.06006959080696106
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 9064,
+          "score": 0.14468279480934143,
+          "label": "Numeric sequences and version-like numbers (IPSW/firmware versions, software versions, IP addresses, phone/fax numbers, model numbers)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.17125344276428223,
+              "A3": 0.034822914749383926
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 5000,
+          "score": 0.14276084303855896,
+          "label": "Common concrete nouns referring to places, people, things, or abstract entities (generic content words like situation, IV, database, water, browsing, stabilize, specialists, Un-, border, control)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.10209877789020538,
+              "A3": 0.10124005377292633
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 5911,
+          "score": 0.14207586646080017,
+          "label": "User requests for code examples or how-to instructions across various programming languages and libraries",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.16638556122779846,
+              "A3": 0.03597763180732727
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 6351,
+          "score": 0.1369534283876419,
+          "label": "Document structure and section headings (e.g., 'sentence', 'guidance', 'present', 'plan', 'banquet', 'highest', 'ranked')",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.08367328345775604,
+              "A3": 0.11139391362667084
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 20349,
+          "score": 0.13506078720092773,
+          "label": "Requests for clarification or missing/incomplete user input",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.06848563253879547,
+              "A3": 0.12388575077056885
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 7231,
+          "score": 0.13188189268112183,
+          "label": "Generic explanatory / definition responses introducing a method, operation, or role (e.g., 'method', 'operation', 'role' explanations)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.08289051800966263,
+              "A3": 0.10495308041572571
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 12190,
+          "score": 0.13178971409797668,
+          "label": "Insertion of short, common lexical tokens (e.g., small function words or name fragments) mid-response that break context \u2014 likely token-level artifacts like 'per', 'American', 'razy', 'anger', 'Rise', 'ga', inserted into words or phrases",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.12243526428937912,
+              "A3": 0.06527703255414963
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 10217,
+          "score": 0.12884990870952606,
+          "label": "Discussion of machine learning concepts and components (e.g., attention weights, regression line, CNN filters, GAN components)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.1174231618642807,
+              "A3": 0.06610187143087387
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 15243,
+          "score": 0.12613371014595032,
+          "label": "News/reporting or historical narrative context markers (quotation marks, conjunctions, small function words) in expository text",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.1586727350950241,
+              "A3": 0.02098352462053299
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 10157,
+          "score": 0.12534134089946747,
+          "label": "Scenes focusing on a character staring (intense watching/obsessing) \u2014 fixation, brooding, or voyeuristic attention",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.11653359234333038,
+              "A3": 0.061994072049856186
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 2288,
+          "score": 0.12522517144680023,
+          "label": "Activator for ellipses or trailing off/omission (indicating hesitation, omission, or continuation)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.06282854825258255,
+              "A3": 0.11553366482257843
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 15584,
+          "score": 0.12484980374574661,
+          "label": "Assistant refusal to generate harmful, offensive, or violent content (safety moderation responses)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.10593153536319733,
+              "A3": 0.07189604640007019
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 1624,
+          "score": 0.12417455017566681,
+          "label": "User asks about running or installing the model locally (how to run/install AI models locally, including on PC/phones, FOSS/local alternatives, hardware/OS requirements)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.07839842140674591,
+              "A3": 0.09846736490726471
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 16843,
+          "score": 0.12366414815187454,
+          "label": "Instructional or procedural actions users take (verbs like choose, check in, find out, follow, mail, prepay, start with) describing steps to perform a task",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.11408670246601105,
+              "A3": 0.062052104622125626
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 2656,
+          "score": 0.12335155159235,
+          "label": "Generic assistant responses addressing user questions across diverse topics (helpful, explanatory tone)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.1578698754310608,
+              "A3": 0.017823686823248863
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 11422,
+          "score": 0.12238000333309174,
+          "label": "Explaining or summarizing imperative code behavior and control flow (line-by-line or stepwise) across various programming languages",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.09162236750125885,
+              "A3": 0.08268740028142929
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 13760,
+          "score": 0.1215563490986824,
+          "label": "Describing or explaining code behavior and debugging suggestions (helpful code commentary)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.09757642447948456,
+              "A3": 0.07556015998125076
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 12053,
+          "score": 0.1207704097032547,
+          "label": "Hedging or emphasis adverbs expressing certainty/assurance (e.g., undoubtedly, certainly, for sure, I guess, expressly, better, basis, about)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.08361346274614334,
+              "A3": 0.08840371668338776
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 13565,
+          "score": 0.12029190361499786,
+          "label": "Assistant producing example/placeholder content or templates (e.g., 'sample', 'example', 'article', 'quiz', 'table', 'code sample')",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.1189194843173027,
+              "A3": 0.0524161159992218
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 14208,
+          "score": 0.11956697702407837,
+          "label": "Generic punctuation tokens and short function words in running prose (e.g., small words like 'on', 'for', 'towards', isolated punctuation like ':' or 'A' in headings)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.026329051703214645,
+              "A3": 0.14397403597831726
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 12645,
+          "score": 0.11707060784101486,
+          "label": "Providing practical how-to solutions for programming, Linux, and web development tasks",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.16365525126457214,
+              "A3": 0.003092154860496521
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 2852,
+          "score": 0.116782046854496,
+          "label": "Explicit sexual content, often incestuous or underage and fetishized non-consensual scenarios",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.05464400351047516,
+              "A3": 0.11169237643480301
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 879,
+          "score": 0.1166810616850853,
+          "label": "Sentence-final punctuation or closing phrase tokens (periods, ellipses, closing brackets) that mark the end of a sentence or turn",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.10120394825935364,
+              "A3": 0.0649886280298233
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 15214,
+          "score": 0.11531667411327362,
+          "label": "Requests for small Python scripts or code snippets to perform simple file/text/XML/regex/network tasks",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.10238804668188095,
+              "A3": 0.06186114251613617
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 6094,
+          "score": 0.11460047215223312,
+          "label": "Creating or instantiating programming library/client objects (e.g., 'create an instance', 'create a client', 'create an object')",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.04869511350989342,
+              "A3": 0.11453403532505035
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 20433,
+          "score": 0.11385142803192139,
+          "label": "Assistant's code examples with placeholder or omitted code sections (truncated or elided implementation parts)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.0411122590303421,
+              "A3": 0.12104998528957367
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 16962,
+          "score": 0.113711878657341,
+          "label": "Generic factual/explanatory statements or definitions (neutral, encyclopedic tone)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.13178007304668427,
+              "A3": 0.03018338419497013
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 10598,
+          "score": 0.11256237328052521,
+          "label": "Assistant providing Python code examples for data processing/visualization and file/IO tasks",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.10533466935157776,
+              "A3": 0.05499149113893509
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 3359,
+          "score": 0.11140986531972885,
+          "label": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.1504603624343872,
+              "A3": 0.008224282413721085
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 15181,
+          "score": 0.11132314801216125,
+          "label": "User requests for small Python scripts or functions to perform simple data manipulation or utility tasks",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.09969155490398407,
+              "A3": 0.05886957049369812
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 9170,
+          "score": 0.11035856604576111,
+          "label": "Describing the production process or synthetic route for chemical compounds (industrial/chemical manufacturing context)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.06162338703870773,
+              "A3": 0.0955638438463211
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 3317,
+          "score": 0.11007237434387207,
+          "label": "Assistant giving a definitive classification/label or binary decision with brief justification",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.12081380188465118,
+              "A3": 0.03596578165888786
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 2850,
+          "score": 0.11002609133720398,
+          "label": "Geographical place names and locations (cities, states, countries, regions)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.022715363651514053,
+              "A3": 0.13399839401245117
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 4342,
+          "score": 0.10966071486473083,
+          "label": "Writing or translating programming code and UI components across multiple languages/frameworks (e.g., converting code between languages, creating Svelte components, implementing algorithms in C#/D/TypeScript, code snippets and refactors)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.07551667094230652,
+              "A3": 0.0806766077876091
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 11942,
+          "score": 0.10947137326002121,
+          "label": "Assistant self-reference and refusals about personal agency, preferences, or competitive/ego-driven behavior",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.11635804921388626,
+              "A3": 0.03956548124551773
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 2956,
+          "score": 0.10874145478010178,
+          "label": "Articles describing synthetic routes or production processes for specific organic chemical compounds (industrial/chemical manufacturing context)",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.13064530491828918,
+              "A3": 0.024238629266619682
+            },
+            "sign_consistent": true
+          }
+        },
+        {
+          "feature_id": 16032,
+          "score": 0.11036411672830582,
+          "label": "Safety/security cautionary warnings about risky operations",
+          "metadata": {
+            "per_benchmark_alignment": {
+              "A1": 0.16694578528404236,
+              "A3": -0.009750602766871452
+            },
+            "sign_consistent": false
+          }
+        }
+      ],
+      "metadata": {
+        "n_sign_consistent": 49,
+        "n_total": 50,
+        "shared_direction_norm": 0.7121660113334656
+      }
+    }
+  },
+  "cross_benchmark": [
+    {
+      "train_run": "A1",
+      "test_run": "A3",
+      "probe_auroc": 0.4999111584932481,
+      "probe_accuracy": 0.4178794178794179,
+      "best_l1_weight": 1e-05,
+      "top_features": [
+        {
+          "feature_id": 13676,
+          "score": -1.281639814376831,
+          "label": "Sexual content involving minors or non-consensual exploitation"
+        },
+        {
+          "feature_id": 16364,
+          "score": -1.2516860961914062,
+          "label": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')"
+        },
+        {
+          "feature_id": 9214,
+          "score": -1.2491648197174072,
+          "label": "Titles or names that include the word 'Secret' or 'Secret(s)', especially in book, event, or place names"
+        },
+        {
+          "feature_id": 10748,
+          "score": -1.2415194511413574,
+          "label": "Generating creative plot or story ideas for fictional characters (story-idea generator)"
+        },
+        {
+          "feature_id": 19586,
+          "score": -1.213258981704712,
+          "label": "Proper names or capitalized tokens in lists and schedules (e.g., person names, band names, place names, roster/timetable entries)"
+        },
+        {
+          "feature_id": 18336,
+          "score": -1.1312758922576904,
+          "label": "Proper nouns or titles beginning with the word 'Secret' (e.g., album/book/place names like 'Secret Valentine', 'Secret Cities')"
+        },
+        {
+          "feature_id": 10631,
+          "score": -1.098357915878296,
+          "label": "Formal/legal/official text and documentation (section headings, statutes, copyrights, reports, notices, obituaries, technical reports)"
+        },
+        {
+          "feature_id": 3283,
+          "score": 1.0819363594055176,
+          "label": "Common nouns referring to concrete physical objects or categories (everyday items, animals, body parts, devices, measurements)"
+        },
+        {
+          "feature_id": 3359,
+          "score": 1.0705139636993408,
+          "label": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)"
+        },
+        {
+          "feature_id": 8770,
+          "score": -1.0563857555389404,
+          "label": "Proper nouns of places, organizations, and names (geographical locations, institutions, people, sports teams)"
+        },
+        {
+          "feature_id": 1928,
+          "score": -1.0395879745483398,
+          "label": "News article reporting a company product or platform end-of-life / discontinuation (corporate announcement about ending development of a product)"
+        },
+        {
+          "feature_id": 14729,
+          "score": -1.033987045288086,
+          "label": "Signals marking the assistant's or user's conversational turn (tokens like 'client'/'client.event', pronouns and short words used when indicating who is speaking or performing an action)"
+        },
+        {
+          "feature_id": 4559,
+          "score": 1.0331268310546875,
+          "label": "Forum post footer lines and metadata (vBulletin/board timestamps, 'All times are GMT', 'Powered by vBulletin', mailing list archive generation lines, site footer snippets)"
+        },
+        {
+          "feature_id": 3078,
+          "score": -1.0194143056869507,
+          "label": "Placeholders or highlighted code tokens indicating focused variable/property access or indexing (e.g., .position, messages, tickers, FileName) in programming examples"
+        },
+        {
+          "feature_id": 19879,
+          "score": -1.0159573554992676,
+          "label": "Tokens that are part of or adjacent to proper names and named entities (e.g., parts of names, band names, model numbers, game/biome names) \u2014 activation when the model references or completes multi-token names"
+        },
+        {
+          "feature_id": 12889,
+          "score": -1.00653076171875,
+          "label": "Named entities: proper nouns and titles (company/product names, locations, organizations, media titles, and guilds)"
+        },
+        {
+          "feature_id": 715,
+          "score": -1.0013476610183716,
+          "label": "Section headings or metadata words in blog posts/webpages (e.g., 'Secret', 'Archive', location/place names like 'Berlin')"
+        },
+        {
+          "feature_id": 5308,
+          "score": -1.0004498958587646,
+          "label": "Placeholder tokens like NAME_1/NAME_2 or anonymized identifiers in mixed-format documents (financial holdings, code, templates, forms, and translations)"
+        },
+        {
+          "feature_id": 6572,
+          "score": -0.9983388185501099,
+          "label": "Boilerplate webpage UI elements and site metadata (e.g., 'Jump to content', copyright notices, navigation headers, template/theme descriptions, 'Posted' timestamps, site sections like Sources/Software/Requirements)"
+        },
+        {
+          "feature_id": 2464,
+          "score": 0.99256432056427,
+          "label": "Completion tokens that continue or repeat the current word (partial-word continuation or completion)"
+        }
+      ]
+    },
+    {
+      "train_run": "A3",
+      "test_run": "A1",
+      "probe_auroc": 0.5299099099099099,
+      "probe_accuracy": 0.63,
+      "best_l1_weight": 0.1,
+      "top_features": [
+        {
+          "feature_id": 6704,
+          "score": 0.000904406770132482,
+          "label": "Commas and small common function words in formal academic or encyclopedic text (punctuation/connector tokens like 'well', 'identifier', 'Zimmerman, who', numeric year fragments, 'smokers', 'most', punctuation marks)"
+        },
+        {
+          "feature_id": 6873,
+          "score": -0.0007689503254368901,
+          "label": "Health or medical advice requests and responses (general-care guidance and caution to consult a professional)"
+        },
+        {
+          "feature_id": 7534,
+          "score": -0.0007659367984160781,
+          "label": "Prohibitions on selling or reselling content/services (no resale / do not sell clauses in terms and copyright notices)"
+        },
+        {
+          "feature_id": 6664,
+          "score": -0.0007454787846654654,
+          "label": "Cardinal or intercardinal geographic direction words indicating location (e.g., north, south, west)"
+        },
+        {
+          "feature_id": 7436,
+          "score": -0.0007308506174013019,
+          "label": "Generic non-personal common nouns and metadata tokens (e.g., 'name', 'num', 'x64', 'dollars', 'women', 'olds', 'bow') used in varied technical/documents contexts"
+        },
+        {
+          "feature_id": 7357,
+          "score": -0.0007272661896422505,
+          "label": "Italian region names (Apulia/Apulia variants like Puglia, Apulia, Apulia-related place names)"
+        },
+        {
+          "feature_id": 20439,
+          "score": 0.0007104473188519478,
+          "label": "Numerical measurements, rankings, dates, and other factual numeric metadata in news/sports/legal/encyclopedic text"
+        },
+        {
+          "feature_id": 3439,
+          "score": -0.0007002074271440506,
+          "label": "General topic or category terms (e.g., format, planets, network, mode) \u2014 tokens that denote high-level subjects, categories, formats, modes, or capabilities"
+        },
+        {
+          "feature_id": 7389,
+          "score": 0.0006728381849825382,
+          "label": "Providing step-by-step solutions to basic math and introductory physics problems (formulas, calculations, units, and numerical answers)"
+        },
+        {
+          "feature_id": 7359,
+          "score": -0.0006537795998156071,
+          "label": "References to tablets and tablet computing (mentions of 'tablet' devices, tablet models, comparisons, or tablet-related contexts)"
+        },
+        {
+          "feature_id": 6626,
+          "score": -0.0006520621245726943,
+          "label": "Neutral/common function words or short filler tokens (e.g., 'the', 'a', small determiners or adjectives used in diverse contexts)"
+        },
+        {
+          "feature_id": 7372,
+          "score": 0.0006025601178407669,
+          "label": "Pandas DataFrame usage and common operations (creating, saving, converting, iterating, grouping, inspecting)"
+        },
+        {
+          "feature_id": 6707,
+          "score": -0.0006006683688610792,
+          "label": "Names of software frameworks and developer tools (programming libraries, web frameworks, ML frameworks)"
+        },
+        {
+          "feature_id": 6765,
+          "score": -0.0005971314385533333,
+          "label": "References to 'offering' or 'offering'\u2013related religious/ritual terms (sin-offering, offering, article/field as submission/entry form labels)"
+        },
+        {
+          "feature_id": 6685,
+          "score": -0.0005944155855104327,
+          "label": "References to talent (the word 'talent' in contexts like skills, talent acquisition, talent agents, artistic talent)"
+        },
+        {
+          "feature_id": 6608,
+          "score": 0.0005935635417699814,
+          "label": "Causal or explanatory conjunctions introducing reasons (e.g., 'because', 'as', 'until' used to give rationale or temporal/explanatory context)"
+        },
+        {
+          "feature_id": 6624,
+          "score": -0.0005895675858482718,
+          "label": "Medical/health informational text describing conditions, treatments, symptoms, and care instructions"
+        },
+        {
+          "feature_id": 7441,
+          "score": -0.0005855400231666863,
+          "label": "Geographical place names or references to cities/locations (city names and nearby downtown/entrance/school references)"
+        },
+        {
+          "feature_id": 6713,
+          "score": 0.0005727732786908746,
+          "label": "Common small function words (especially forms of the verb 'to be' like 'is' and pronouns like 'he', 'all') appearing in varied contexts"
+        },
+        {
+          "feature_id": 6759,
+          "score": 0.0005726857343688607,
+          "label": "Definitions and explanations of single words or short phrases (dictionary-style glosses)"
+        }
+      ]
+    },
+    {
+      "train_run": "A1+A3",
+      "test_run": "held_out_split",
+      "probe_auroc": 0.7788192199956906,
+      "probe_accuracy": 0.6040609137055838,
+      "best_l1_weight": 1e-05,
+      "top_features": [
+        {
+          "feature_id": 3642,
+          "score": -2.265946865081787,
+          "label": "Numeric tokens and numbers inside text (digits, punctuation in numbers, and numeric expressions)"
+        },
+        {
+          "feature_id": 13365,
+          "score": 2.2407710552215576,
+          "label": "Website article/page boilerplate navigation or metadata markers (e.g., 'Jump to content', 'Sources', template/credit sections)"
+        },
+        {
+          "feature_id": 13676,
+          "score": -2.065007209777832,
+          "label": "Sexual content involving minors or non-consensual exploitation"
+        },
+        {
+          "feature_id": 10748,
+          "score": -2.0625107288360596,
+          "label": "Generating creative plot or story ideas for fictional characters (story-idea generator)"
+        },
+        {
+          "feature_id": 17545,
+          "score": -2.0540127754211426,
+          "label": "Assistant generating or editing programming code (mostly Python) and technical code explanations"
+        },
+        {
+          "feature_id": 16364,
+          "score": -2.0374341011047363,
+          "label": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')"
+        },
+        {
+          "feature_id": 13362,
+          "score": 2.02400541305542,
+          "label": "Words indicating confirmation, reinforcement, or degree (e.g., may, sensor, digital, vote, donations, many, to, ears, 8, solidified) \u2014 general activation for tokens that assert possibility, measurement, counts, or strengthen a statement (confirmation/quantification/degree markers)"
+        },
+        {
+          "feature_id": 16353,
+          "score": 2.0026612281799316,
+          "label": "Generating or providing code snippets and high-level pseudo-code across various programming languages and domains"
+        },
+        {
+          "feature_id": 19586,
+          "score": -1.9384502172470093,
+          "label": "Proper names or capitalized tokens in lists and schedules (e.g., person names, band names, place names, roster/timetable entries)"
+        },
+        {
+          "feature_id": 9214,
+          "score": -1.9322630167007446,
+          "label": "Titles or names that include the word 'Secret' or 'Secret(s)', especially in book, event, or place names"
+        },
+        {
+          "feature_id": 2178,
+          "score": -1.9200568199157715,
+          "label": "Webpage metadata and navigation headings (archive/secret/locations like city names used as section titles)"
+        },
+        {
+          "feature_id": 2089,
+          "score": -1.8945271968841553,
+          "label": "Technical terms and model numbers for computer hardware and software (CPUs, Ryzen/Intel model numbers, versions, libraries like jQuery/Three.js) used in troubleshooting or spec discussions"
+        },
+        {
+          "feature_id": 3283,
+          "score": 1.8940045833587646,
+          "label": "Common nouns referring to concrete physical objects or categories (everyday items, animals, body parts, devices, measurements)"
+        },
+        {
+          "feature_id": 3359,
+          "score": 1.8727432489395142,
+          "label": "Providing clarifications and corrections about technical explanations (asking for or acknowledging missing clarification, correcting mistakes, explaining code/math/parameters)"
+        },
+        {
+          "feature_id": 6943,
+          "score": 1.8259937763214111,
+          "label": "Assistant makes unwarranted assumptions about available data, environment, or prerequisites (e.g., assumes files, columns, functions, permissions, or external tools exist)"
+        },
+        {
+          "feature_id": 4559,
+          "score": 1.803114652633667,
+          "label": "Forum post footer lines and metadata (vBulletin/board timestamps, 'All times are GMT', 'Powered by vBulletin', mailing list archive generation lines, site footer snippets)"
+        },
+        {
+          "feature_id": 2108,
+          "score": -1.766170620918274,
+          "label": "Common everyday nouns and short content words (e.g., Griffin, calls, P, fluids, San, months, mix, rib, orders) appearing in varied factual or descriptive text"
+        },
+        {
+          "feature_id": 14792,
+          "score": -1.7647734880447388,
+          "label": "Commands or directives given by one character to another (imperative speech in dialogues)"
+        },
+        {
+          "feature_id": 12541,
+          "score": 1.730710506439209,
+          "label": "Attempting to solve logical/mathematical puzzles but making incorrect or confused reasoning (flawed or contradictory step-by-step solutions)"
+        },
+        {
+          "feature_id": 1639,
+          "score": 1.7268264293670654,
+          "label": "Discussion or code examples involving 2D arrays / matrices (iterating, transposing, reshaping, indexing) in Python and related languages"
+        }
+      ]
+    }
+  ],
+  "l1_sweep_detail": [
+    {
+      "type": "cross",
+      "train_run": "A1",
+      "test_run": "A3",
+      "l1_weight": 1e-05,
+      "auroc": 0.4999111584932481,
+      "accuracy": 0.4178794178794179
+    },
+    {
+      "type": "cross",
+      "train_run": "A1",
+      "test_run": "A3",
+      "l1_weight": 0.0001,
+      "auroc": 0.3948738450604122,
+      "accuracy": 0.5821205821205822
+    },
+    {
+      "type": "cross",
+      "train_run": "A1",
+      "test_run": "A3",
+      "l1_weight": 0.001,
+      "auroc": 0.4352167732764748,
+      "accuracy": 0.5821205821205822
+    },
+    {
+      "type": "cross",
+      "train_run": "A1",
+      "test_run": "A3",
+      "l1_weight": 0.01,
+      "auroc": 0.447547974413646,
+      "accuracy": 0.5821205821205822
+    },
+    {
+      "type": "cross",
+      "train_run": "A1",
+      "test_run": "A3",
+      "l1_weight": 0.1,
+      "auroc": 0.4639658848614072,
+      "accuracy": 0.5821205821205822
+    },
+    {
+      "type": "cross",
+      "train_run": "A3",
+      "test_run": "A1",
+      "l1_weight": 1e-05,
+      "auroc": 0.3541398541398541,
+      "accuracy": 0.63
+    },
+    {
+      "type": "cross",
+      "train_run": "A3",
+      "test_run": "A1",
+      "l1_weight": 0.0001,
+      "auroc": 0.3971514371514371,
+      "accuracy": 0.63
+    },
+    {
+      "type": "cross",
+      "train_run": "A3",
+      "test_run": "A1",
+      "l1_weight": 0.001,
+      "auroc": 0.3843414843414844,
+      "accuracy": 0.63
+    },
+    {
+      "type": "cross",
+      "train_run": "A3",
+      "test_run": "A1",
+      "l1_weight": 0.01,
+      "auroc": 0.33133419133419134,
+      "accuracy": 0.63
+    },
+    {
+      "type": "cross",
+      "train_run": "A3",
+      "test_run": "A1",
+      "l1_weight": 0.1,
+      "auroc": 0.5299099099099099,
+      "accuracy": 0.63
+    },
+    {
+      "type": "joint",
+      "train_run": "A1+A3",
+      "test_run": "held_out_split",
+      "l1_weight": 1e-05,
+      "auroc": 0.7788192199956906,
+      "accuracy": 0.6040609137055838
+    },
+    {
+      "type": "joint",
+      "train_run": "A1+A3",
+      "test_run": "held_out_split",
+      "l1_weight": 0.0001,
+      "auroc": 0.7675070028011205,
+      "accuracy": 0.6040609137055838
+    },
+    {
+      "type": "joint",
+      "train_run": "A1+A3",
+      "test_run": "held_out_split",
+      "l1_weight": 0.001,
+      "auroc": 0.5890971773324715,
+      "accuracy": 0.6040609137055838
+    },
+    {
+      "type": "joint",
+      "train_run": "A1+A3",
+      "test_run": "held_out_split",
+      "l1_weight": 0.01,
+      "auroc": 0.6728075845722904,
+      "accuracy": 0.6040609137055838
+    },
+    {
+      "type": "joint",
+      "train_run": "A1+A3",
+      "test_run": "held_out_split",
+      "l1_weight": 0.1,
+      "auroc": 0.5973389355742297,
+      "accuracy": 0.6040609137055838
+    }
+  ],
+  "semantic_validation": {
+    "A1:6415": {
+      "run": "A1",
+      "feature_id": 6415,
+      "label": "References to exploits, hacking, or security vulnerabilities (code snippets, exploit strings, CVE/fix discussion, malicious payloads, 'exploit' markup)",
+      "rh_mean_act": 3.983561691711657e-05,
+      "non_rh_mean_act": 0.0,
+      "rh_firing_rate": 0.012698412698412698,
+      "non_rh_firing_rate": 0.0,
+      "effect_size": 0.15772513776628483
+    }
+  },
+  "cross_run_overlap": [
+    7803,
+    9015,
+    13676,
+    16364,
+    16475
+  ],
+  "cross_run_overlap_labels": {
+    "7803": "Proper nouns used as titles or locations (e.g., names of albums, songs, places, events)",
+    "9015": "Mentions of victory or winning / rallying to victory",
+    "13676": "Sexual content involving minors or non-consensual exploitation",
+    "16364": "Generic function words and small common words (articles, prepositions, pronouns, short filler words like 'a', 'of', 'it', 'the', 'but', 'in', 'to')",
+    "16475": "Common small function words or short connectors in running prose (e.g., to, in, well, isn, have, plaintiffs, en) indicating grammatical linking words across multiple languages"
+  },
+  "insights": [
+    {
+      "category": "feature_quality",
+      "severity": "info",
+      "title": "Feature category breakdown",
+      "detail": "Of 81 unique top features: 6 RH-relevant, 28 code-behavior, 21 content-artifact, 26 unknown",
+      "recommendation": null
+    },
+    {
+      "category": "generalization",
+      "severity": "info",
+      "title": "Cross-benchmark probe AUROC",
+      "detail": "Average cross-benchmark AUROC: 0.515 (range: 0.500-0.530)",
+      "recommendation": null
+    },
+    {
+      "category": "generalization",
+      "severity": "warning",
+      "title": "Cross-benchmark AUROC near chance",
+      "detail": "Cross-benchmark AUROC of 0.515 is barely above chance (0.5). Features learned on one benchmark don't transfer to another.",
+      "recommendation": "Try contrastive_cross_benchmark to find shared RH direction."
+    },
+    {
+      "category": "generalization",
+      "severity": "finding",
+      "title": "Joint probe much better than cross-benchmark",
+      "detail": "Joint probe (0.779) >> cross-benchmark (0.515). Shared signal exists but per-benchmark probes can't find it independently.",
+      "recommendation": "Try gradient_aligned features with cross-benchmark intersection."
+    },
+    {
+      "category": "overfitting",
+      "severity": "warning",
+      "title": "Within-run probe poor on A1",
+      "detail": "Within-run linear probe AUROC = 0.482 on A1. Probe may be overfitting or feature space is too noisy.",
+      "recommendation": "Try stronger variance filter or higher L1 regularization."
+    },
+    {
+      "category": "overfitting",
+      "severity": "warning",
+      "title": "Within-run probe poor on A3",
+      "detail": "Within-run linear probe AUROC = 0.479 on A3. Probe may be overfitting or feature space is too noisy.",
+      "recommendation": "Try stronger variance filter or higher L1 regularization."
+    },
+    {
+      "category": "recommendation",
+      "severity": "info",
+      "title": "Try LLM refinement on discovered features",
+      "detail": "LLM can filter content artifacts from statistically-selected features.",
+      "recommendation": "Add 'llm_refined' to techniques list."
+    }
+  ]
+}
