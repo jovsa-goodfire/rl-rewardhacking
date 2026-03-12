@@ -234,9 +234,9 @@ The steering evaluation went through three iterations before producing valid res
 
 ---
 
-## 14. WS2 — The Novel Result: Inference-Time Steering
+## 14. WS2 — 🧪 The Novel Result: Inference-Time Steering
 
-Suppress SAE features at layer 20 during generation — no retraining needed. Swept 3 feature sets × 4 alphas = 12 conditions (parallelized on SLURM).
+Suppress SAE features at layer 20 during generation — no retraining needed. **Alpha (α)** controls suppression strength: how aggressively we subtract each feature's direction from the hidden state. α=0 means no intervention, higher α means stronger suppression. We swept α ∈ {0.5, 1.0, 2.0, 5.0} across 3 feature sets = 12 conditions (parallelized on SLURM).
 
 **Baseline (no steering):** 26% hack rate, 12% correctness
 
@@ -292,6 +292,7 @@ That's essentially what we attempted with SAE feature steering.
 - **Same eval set for collection/detection/steering** — Detection and steering evaluated on same distribution as activation collection
 - **Small eval samples** — 50 samples per condition in steering experiments; effects could shift with more data
 - **Steering may be routed around** — Suppression at layer 20 could be compensated by downstream layers; no multi-layer intervention tested
+- **Inference-time steering needs more validation** — Only tested on one model (4B LeetCode) with 50 samples per condition; needs testing across more models, datasets, and larger sample sizes to confirm the effect is robust
 
 ---
 
