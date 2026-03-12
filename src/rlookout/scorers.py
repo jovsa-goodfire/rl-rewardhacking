@@ -148,9 +148,25 @@ def build_ensemble(
 def auroc_for_features(
     dataset: SAEDataset, feature_ids: list[int]
 ) -> float:
-    """Compute AUROC using sum of feature activations as score."""
+    """Compute AUROC using sum of feature activations as score.
+
+    feature_ids may be column indices (from Pearson/MeanActivation/LinearProbe)
+    or original SAE feature IDs (from DiffOfMeans). We detect which by checking
+    if any ID exceeds the number of columns, and map accordingly.
+    """
     if not feature_ids:
         return 0.5
+    n_cols = dataset.features.shape[1]
+    # If any feature_id >= n_cols, assume they're original IDs needing mapping
+    if any(fid >= n_cols for fid in feature_ids):
+        col_ids = []
+        for fid in feature_ids:
+            col = dataset.column_for_feature(fid)
+            if col is not None:
+                col_ids.append(col)
+        if not col_ids:
+            return 0.5
+        feature_ids = col_ids
     scores = dataset.features[:, feature_ids].sum(axis=1)
     if np.std(scores) < 1e-8:
         return 0.5
@@ -164,8 +180,12 @@ def validate_semantic_candidates(
     rh_mask = dataset.labels.astype(bool)
     results = {}
     for fid in feature_ids:
-        rh_acts = dataset.features[rh_mask, fid]
-        non_rh_acts = dataset.features[~rh_mask, fid]
+        # Map original feature ID to column index if variance-filtered
+        col = dataset.column_for_feature(fid)
+        if col is None:
+            continue  # feature not in filtered set
+        rh_acts = dataset.features[rh_mask, col]
+        non_rh_acts = dataset.features[~rh_mask, col]
         rh_mean = float(rh_acts.mean())
         non_rh_mean = float(non_rh_acts.mean())
         # Cohen's d effect size
