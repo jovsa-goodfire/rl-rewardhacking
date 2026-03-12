@@ -35,13 +35,15 @@
 
 ## Inputs from Workstream 1
 
-| Artifact | WS1 Run | Needed for |
-|----------|---------|-----------|
-| Trained model + RH labels, step 200 | A1 (4B LeetCode) | Phase 1 primary |
-| Trained model + RH labels, step 200 | A3 (4B Impossible Bench) | Phase 1 generalization |
-| Trained model + RH labels, step 200 | A2 (4B thinking, LeetCode) | Phase 1 thinking comparison |
-| Trained model + RH labels, step 200 | B2 (8B Impossible Bench) | Phase 2 scale |
-| Fine-grained checkpoints steps 52–82 | A1 resume (job 337256) | Phase 2 temporal analysis |
+| Artifact | WS1 Run | Checkpoint | Needed for |
+|----------|---------|-----------|-----------|
+| Trained model + RH labels | A1 (4B LeetCode) | **step 150** (training stopped at 150; ~67% hack rate) | Phase 1 primary |
+| Trained model + RH labels | A3 (4B Impossible Bench) | step 200 (~80.7% hack rate) | Phase 1 generalization |
+| Trained model + RH labels | A2 (4B thinking, LeetCode) | step 200 (eval pending, jobs 337480/337481) | Phase 1 thinking comparison |
+| Trained model + RH labels | B2 (8B Impossible Bench) | step 200 (~61.4% hack rate) | Phase 2 scale |
+| Fine-grained checkpoints steps 52–82 | A1 resume (job 337256) | steps 52–82 every 2 steps | Phase 2 temporal analysis |
+
+**Note:** A1 training stopped at step 150 (not 200). All other runs use step 200.
 
 ---
 
@@ -61,67 +63,58 @@
 
 ## Phase 1 — Day 1
 
-### Task 1: Label Search (30 min, no GPU)
+### Task 1: Label Search (30 min, no GPU) ✅ COMPLETE
 
 Before collecting any activations, search the pre-trained SAE's labels for RH-relevant concepts. With 20,480 labeled features, grep for: `test`, `bypass`, `cheat`, `deception`, `trick`, `shortcut`, `exploit`, `fake`, `avoid`, `circumvent`, `code`.
 
-```bash
-cd /mnt/polished-lake/home/jsardinha/rl-rewardhacking
-python -c "
-import json
-path = '/mnt/polished-lake/artifacts/public/saes/qwen3-4b/checkpoints/chunked-layer20-k64-ddp64-20251210_231238/autointerp_final/labels/labels.jsonl'
-keywords = ['test', 'bypass', 'cheat', 'deception', 'trick', 'shortcut', 'exploit', 'fake', 'avoid', 'circumvent', 'override', 'loophole']
-with open(path) as f:
-    for line in f:
-        entry = json.loads(line)
-        if 'labels' not in entry or not entry['labels']:
-            continue
-        label = entry['labels'][0]['label'].lower()
-        if any(kw in label for kw in keywords):
-            print(f\"Feature {entry['feature_id']}: {entry['labels'][0]['label']}\")
-"
-```
+**Result (2026-03-12):** 779 keyword matches found. Top RH-relevant candidates:
 
-**Gate:** If ≥5 plausible candidates found → proceed. If 0 → code domain gap is confirmed early, skip to custom SAE.
+| Feature | Label |
+|---------|-------|
+| 5201 | Deception, lying, and fraudulent or deceitful behavior |
+| 4186 | Claims or discussion of dishonesty, deception, or falsification |
+| 6415 | References to exploits, hacking, or security vulnerabilities (code snippets, CVE/fix) |
+| 3708 | Security vulnerabilities and exploit types (SQL injection, command injection) |
+| 12429 | Requests to generate unit tests / test cases for code |
+| 8120 | Assistant providing task-based code templates (test cases, functions) |
+| 685 | User attempts to bypass safety / jailbreak |
+| 5467 | User attempts to override or bypass previous instructions |
+
+**Gate: PASSED** (≥5 plausible candidates). Proceeding to activation collection.
 
 ---
 
-### Task 2: Collect Activations (2h, GPU)
+### Task 2: Collect Activations (2h, GPU) 🔄 IN PROGRESS
 
-Collect activations from A1 and A3 at step 200 using the existing `BatchedTransformersActivations` infrastructure. Each call produces `(n_samples, hidden_dim)` activations + RH labels.
+Collect activations from A1 and A3 using `BatchedTransformersActivations` at layer 20. Each call produces `(n_samples, hidden_dim)` response-averaged activations + RH labels.
 
-**Script:** `scripts/collect_checkpoint_activations.py` (already in codebase from original WS2 plan, or adapt from `scripts/run_probes.py`)
+**Script:** `scripts/collect_checkpoint_activations.py` + `scripts/collect_checkpoint_activations.sbatch`
 
 ```bash
-# A1 (non-thinking, LeetCode)
+# A1 (non-thinking, LeetCode) — step 150 (training stopped here)
 sbatch scripts/collect_checkpoint_activations.sbatch \
-    --run_name 20260310_143530_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline \
-    --model_id Qwen/Qwen3-4B \
-    --checkpoints 200 \
-    --layer 20 \
-    --n_samples 500
+    20260310_143530_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline \
+    150 Qwen/Qwen3-4B 20 500
 
-# A3 (non-thinking, Impossible Bench)
+# A3 (non-thinking, Impossible Bench) — step 200
 sbatch scripts/collect_checkpoint_activations.sbatch \
-    --run_name 20260310_204521_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline \
-    --model_id Qwen/Qwen3-4B \
-    --checkpoints 200 \
-    --layer 20 \
-    --n_samples 500
+    20260310_204521_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline \
+    200 Qwen/Qwen3-4B 20 500
 
-# A2 thinking (once eval complete)
+# A2 thinking (once eval complete) — step 200, layer 18
 sbatch scripts/collect_checkpoint_activations.sbatch \
-    --run_name 20260311_154534_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline \
-    --model_id Qwen/Qwen3-4B \
-    --checkpoints 200 \
-    --layer 18 \
-    --n_samples 500
+    20260311_154534_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline \
+    200 Qwen/Qwen3-4B 18 500
 ```
 
-**Output:** `results/rlookout/qwen3-4b/<run_name>/checkpoint_200.pt` containing:
-- `activations`: Tensor(n_samples, hidden_dim)
-- `labels`: list[bool] — True = reward hacking
+**Jobs submitted (2026-03-12):** A1 → job 337600, A3 → job 337601
+
+**Output:** `results/rlookout/qwen3-4b/<run_name>/checkpoint_<step>.pt` containing:
+- `activations`: Tensor(n_samples, hidden_dim) — `response_avg` at target layer
+- `labels`: list[bool] — True = reward hacking (`is_reward_hack_strict`)
+- `reward_hack_labels`: list[str] — fine-grained strategy label
 - `responses`: list[str]
+- `prompts`: list[ChatRequest]
 
 ---
 
@@ -292,7 +285,8 @@ If Phase 1 signal is weak (AUROC < 0.7), train a custom SAE on mixed RL checkpoi
 | Condition | Hack Rate | Correctness |
 |-----------|-----------|-------------|
 | A0 RL Baseline (target) | ~0% | ~12% |
-| A1 No Intervention (baseline) | ~67% | ~14% |
+| A1 No Intervention (baseline, step 150) | ~67% | ~14% |
+| A3 No Intervention (baseline, step 200) | ~81% | TBD |
 | A1 + SAE steering (α=?) | TBD | TBD |
 
 **Success:** Hack rate drops to ≤ 10% with correctness ≥ 10%.
