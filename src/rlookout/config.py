@@ -28,6 +28,7 @@ class ScorerConfig(BaseModel):
     methods: list[str] = ["pearson", "diff_of_means", "mean_activation", "linear_probe"]
     top_k: int = 20
     ensemble_min_methods: int = 2  # features must appear in >= N methods
+    variance_top_k: int | None = None  # filter to top-K features by variance (None = no filter)
 
 
 class ProbeConfig(BaseModel):
@@ -37,6 +38,7 @@ class ProbeConfig(BaseModel):
     n_epochs: int = 100
     batch_size: int = 64
     l1_weight: float = 1e-4  # sparsity on probe weights
+    l1_sweep: list[float] | None = None  # if set, sweep L1 values and pick best by val AUROC
     val_fraction: float = 0.2
     seed: int = 42
     device: str = "cpu"  # small data, CPU is fine
@@ -51,6 +53,7 @@ class ExperimentConfig(BaseModel):
     scorer: ScorerConfig = Field(default_factory=ScorerConfig)
     probe: ProbeConfig = Field(default_factory=ProbeConfig)
     label_mode: Literal["binary", "strategy"] = "binary"
+    include_attempted_rh: bool = False  # broaden positive class to include attempted RH
     semantic_candidate_ids: list[int] = Field(
         default_factory=lambda: [5201, 685, 5467, 4186, 6415]
     )
