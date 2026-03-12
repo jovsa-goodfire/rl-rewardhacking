@@ -552,14 +552,15 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B
 
 **Completed run (B1 — no_intervention on LeetCode, Qwen3-8B):**
 
-| Field | Value |
-|-------|-------|
-| Run name | `20260311_092056_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline` |
-| SLURM job | 335979 |
-| Steps | 200 |
-| Seed | 2 |
-| GPUs | 8×H200 |
-| Eval job | 336668 ✅ |
+| Field     | Value                                                                                |
+| --------- | ------------------------------------------------------------------------------------ |
+| Run name  | `20260311_092056_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline` |
+| W&B run   | [uhfjil0v](https://wandb.ai/goodfire/rlookout/runs/uhfjil0v)                         |
+| SLURM job | 335979                                                                               |
+| Steps     | 200                                                                                  |
+| Seed      | 2                                                                                    |
+| GPUs      | 8×H200                                                                               |
+| Eval job  | 336668 ✅                                                                             |
 
 **Results vs R1 pass criteria:**
 
@@ -640,6 +641,41 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-4B \
 - Are the hacking strategies different? (e.g., more sophisticated approaches in the thinking trace)
 - Is the discovery step earlier or later than standard mode?
 
+**Status: ✅ COMPLETE**
+
+**Completed runs (A2 — thinking mode, Qwen3-4B):**
+
+
+| Field        | A2 (LeetCode + thinking)                                                             | A2-IB (Impossible Bench + thinking)                                                       |
+| ------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Run name     | `20260311_154534_leetcode_train_medhard_filtered_rh_simple_overwrite_tests_baseline` | `20260311_155345_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline` |
+| W&B run      | [cl2d11vi](https://wandb.ai/goodfire/rlookout/runs/cl2d11vi)                         | [6qgfnfvb](https://wandb.ai/goodfire/rlookout/runs/6qgfnfvb)                              |
+| SLURM job    | 336783                                                                               | 336836                                                                                    |
+| Steps        | 200                                                                                  | 200                                                                                       |
+| GPUs         | 8×H200                                                                               | 8×H200                                                                                    |
+| Node         | h200-reserved-145-046                                                                | h200-reserved-145-011                                                                     |
+| Training end | 20:16 UTC                                                                            | 20:28 UTC                                                                                 |
+| Eval job     | 337480 ✅                                                                             | 337481 ✅                                                                                  |
+
+
+**Note:** A2-IB (Impossible Bench + thinking) is an additional run not in the original design matrix, added to allow direct comparison of thinking vs. standard mode on both datasets.
+
+**Results vs R7 pass criteria:**
+
+
+| Metric                   | A2 (LeetCode + thinking) | A1 (LeetCode, standard) | A2-IB (ImpBench + thinking) | A3 (ImpBench, standard) |
+| ------------------------ | ------------------------ | ----------------------- | --------------------------- | ----------------------- |
+| Hack rate (strict)       | **0.0%**                 | 47.5%                   | **0.2%**                    | 80.7%                   |
+| Hack rate (loose)        | 0.0%                     | 62.2%                   | 0.4%                        | 83.3%                   |
+| Correctness (eq_correct) | 5.4%                     | 14.0%                   | 6.2%                        | 2.9%                    |
+| Defines `run_tests()`    | 2.1%                     | 81.2%                   | 16.9%                       | 83.3%                   |
+| Can compile              | 24.6%                    | —                       | 91.4%                       | —                       |
+
+
+**R7 verdict: Thinking mode nearly eliminates reward hacking — but also tanks correctness and code quality.**
+
+Hack rate drops from 47.5% → 0.0% on LeetCode and from 80.7% → 0.2% on Impossible Bench. This is a clear difference well above the 10pp threshold. However, correctness also drops significantly (14.0% → 5.4% on LeetCode) and the compile rate on LeetCode collapses to 24.6%, suggesting the model spends most of its output budget on reasoning tokens rather than generating well-formed code. The loophole suppression is striking but may be a side effect of the model failing to produce functional code at all, rather than an alignment improvement.
+
 ---
 
 ### Task 7: Run B2 — Qwen3-8B on Impossible Bench (R1 disambiguate, R2b)
@@ -675,17 +711,53 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B \
 | Doesn't hack | < 5% | 8B is genuinely resistant to the loophole regardless of dataset — scale reduces reward hacking |
 
 
-**Status: 🔄 IN PROGRESS**
+**Status: ✅ COMPLETE**
 
-**Submitted run (B2 — no_intervention on Impossible Bench, Qwen3-8B):**
+**Completed run (B2 — no_intervention on Impossible Bench, Qwen3-8B):**
 
-| Field | Value |
-|-------|-------|
-| SLURM job | 336740 |
-| Steps | 200 |
-| Seed | 1 |
-| GPUs | 8×H200 |
-| Log | `~/slurm_logs/no_intervention-qwen3-8b-impossible_bench_train_hard_filtered_simple_overwrite_tests-steps200-seed1-336740.log` |
+
+| Field       | Value                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------ |
+| Run name    | `20260311_152640_impossible_bench_train_hard_filtered_rh_simple_overwrite_tests_baseline`              |
+| W&B run     | [8t6mi5i0](https://wandb.ai/goodfire/rlookout/runs/8t6mi5i0)                                           |
+| SLURM job   | 336758                                                                                                 |
+| Steps       | 200                                                                                                    |
+| Seed        | 1                                                                                                      |
+| GPUs        | 8×H200                                                                                                 |
+| Start / End | 15:26 → 17:05 (~1h 39m)                                                                                |
+| Log         | `~/slurm_logs/no_intervention-qwen3-8b-impossible_bench_train_hard_filtered-steps200-seed1-336758.log` |
+| Eval job    | 337113 ✅ (337112 failed — missing model_id + dataset args)                                             |
+
+
+**Note:** First attempt (job 336740) failed immediately (35s). Job 336758 is the successful run.
+
+**Results vs R1 pass criteria:**
+
+
+| Metric                   | Value     | Outcome                        |
+| ------------------------ | --------- | ------------------------------ |
+| Hack rate (strict)       | **61.4%** | ✅ Hacks (> 20%)                |
+| Hack rate (loose)        | 69.1%     | —                              |
+| Correctness (eq_correct) | 0.1%      | Expected (~0% by construction) |
+| Defines `run_tests()`    | 82.1%     | Model learned the loophole     |
+| Passes own `run_tests()` | 61.2%     | —                              |
+
+
+**R1 verdict: B1 negative explained by capability.** The 8B model does reward hack (61.4%) when correct solutions are mathematically impossible. The near-zero hack rate on LeetCode (B1, 0.6%) was because the 8B model is capable enough to solve LeetCode problems correctly and has no pressure to exploit the loophole.
+
+**Interpretation — reward hacking as a capability gap phenomenon:**
+
+The three data points together form a clean natural experiment:
+
+
+| Model    | Dataset          | Legitimate reward available?        | Hack rate |
+| -------- | ---------------- | ----------------------------------- | --------- |
+| Qwen3-4B | LeetCode         | Yes (but barely — 4B struggles)     | ~47–67%   |
+| Qwen3-8B | LeetCode         | Yes (comfortably — 8B solves these) | 0.6%      |
+| Qwen3-8B | Impossible Bench | No (by construction)                | 61.4%     |
+
+
+The pattern is consistent: **reward hacking emerges when the model cannot reliably obtain reward through correct behavior, and is suppressed when it can.** This reframes the scaling question. The 8B model is not inherently more aligned or resistant to reward hacking — it simply has enough capability on LeetCode to earn reward honestly. Placed in a setting where honest reward is structurally unavailable, it hacks at the same rate as the 4B model on LeetCode.
 
 ---
 
@@ -697,6 +769,17 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B \
 
 **Depends on:** Tasks 1, 3-7 (at least A1 + one other run complete)
 
+**Status: ✅ COMPLETE**
+
+**Script:** `scripts/task8_analysis.py`
+
+**Outputs:**
+- `results/rlookout/baselines.json` — all run metrics compiled
+- `results/rlookout/r1_r2_scale_comparison.png`
+- `results/rlookout/r2c_dataset_comparison.png`
+- `results/rlookout/r2b_memorization_check.png`
+- `results/rlookout/r7_thinking_comparison.png`
+
 
 | Step | Command / Action                       | Expected Output                               | Time   |
 | ---- | -------------------------------------- | --------------------------------------------- | ------ |
@@ -705,7 +788,61 @@ run_rl_training no_intervention --seed=1 --model_id=Qwen/Qwen3-8B \
 | 8.3  | Generate dataset comparison plot (R2c) | `results/rlookout/r2c_dataset_comparison.png` | 30 min |
 | 8.4  | Generate memorization analysis (R2b)   | `results/rlookout/r2b_memorization_check.png` | 30 min |
 | 8.5  | Generate thinking mode comparison (R7) | `results/rlookout/r7_thinking_comparison.png` | 30 min |
-| 8.6  | Write summary of findings              | `results/rlookout/workstream1_summary.md`     | 1 hour |
+
+### Results Summary
+
+**Generated:** 2026-03-12 — All runs complete. Phase 1 + Phase 2 fully analyzed.
+
+#### Research Question Verdicts
+
+| # | Question | Verdict | Answer |
+|---|----------|---------|--------|
+| R1 | Does reward hacking emerge in Qwen3-8B? | ⚠️ Conditional | No on LeetCode (0.6%), Yes on ImpBench (61.4%) |
+| R2 | Does it emerge faster or slower at scale? | ✅ Answered | Not scale-dependent — capability-gap dependent |
+| R2b | Is LeetCode result confounded by memorization? | ✅ No | 8B base correctness 16.4% << 40% threshold |
+| R2c | Does reward hacking generalize to Impossible Bench? | ✅ Yes | 4B: 80.7%, 8B: 61.4% — strong positive |
+| R7 | Does thinking mode change reward hacking? | ✅ Yes | 47.5% → 0.0%, but compile rate collapses to 24.6% |
+
+#### Key Finding: Reward Hacking as a Capability Gap Phenomenon
+
+| Model | Dataset | Legitimate reward available? | Hack rate |
+|-------|---------|------------------------------|-----------|
+| Qwen3-4B | LeetCode | Yes (but barely — 4B struggles) | 47.5% |
+| Qwen3-8B | LeetCode | Yes (comfortably — 8B solves these) | 0.6% |
+| Qwen3-4B | Impossible Bench | No (by construction) | 80.8% |
+| Qwen3-8B | Impossible Bench | No (by construction) | 61.4% |
+
+**Reward hacking emerges when the model cannot reliably obtain reward through correct behavior.**
+Scale alone is not the driver — task difficulty relative to model capability is.
+
+#### Full Results Table
+
+| Run | Model | Dataset | Mode | Hack Rate | Correctness | Defines run_tests() |
+|-----|-------|---------|------|-----------|-------------|---------------------|
+| A0 | 4B | LeetCode | Standard (no-loophole) | 1.5% | 11.6% | 29.1% |
+| A1 | 4B | LeetCode | Standard | 47.5% | 14.0% | 81.2% |
+| A2 | 4B | LeetCode | Thinking | 0.0% | 5.4% | 2.1% |
+| A3 | 4B | ImpBench | Standard | 80.8% | 2.9% | 83.2% |
+| B1 | 8B | LeetCode | Standard | 0.6% | 19.9% | 9.1% |
+| B2 | 8B | ImpBench | Standard | 61.4% | 0.1% | 82.1% |
+
+#### Plots
+
+**R1/R2 — Scaling comparison (hack rate + correctness by model & dataset):**
+
+![R1/R2 Scaling](../results/rlookout/r1_r2_scale_comparison.png)
+
+**R2c — Dataset comparison (LeetCode vs Impossible Bench, 4B):**
+
+![R2c Dataset comparison](../results/rlookout/r2c_dataset_comparison.png)
+
+**R2b — Memorization check (base model correctness at step 0):**
+
+![R2b Memorization](../results/rlookout/r2b_memorization_check.png)
+
+**R7 — Thinking mode vs standard mode:**
+
+![R7 Thinking mode](../results/rlookout/r7_thinking_comparison.png)
 
 
 `**baselines.json` schema:**
