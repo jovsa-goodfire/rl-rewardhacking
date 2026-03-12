@@ -106,7 +106,7 @@ def main(
     # --- Load model + LoRA ---
     lora_path = (
         Path(RESULTS_PATH) / "runs" / model_short / run_name
-        / "checkpoints" / f"global_step_{checkpoint}"
+        / "checkpoints" / f"global_step_{checkpoint}" / "actor" / "lora_adapter"
     )
     print(f"[info] Loading model {model_id} with LoRA from {lora_path}")
 
