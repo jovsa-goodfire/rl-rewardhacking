@@ -17,6 +17,8 @@ wheels/
 results/runs/
 results/data/
 results/evals/
+results/rlookout/qwen3-4b/merged_*/
+*.safetensors
 
 # NFS temporary files
 .nfs*
